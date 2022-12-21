@@ -10,13 +10,16 @@
 /* Monomial */
 
 // monomial evaluation
-Scalar Monomial::eval(ScalarVec x)
+Scalar Monomial::eval(ScalarVec & x)
 {
     // for each variable, calculate its order-th pow
     Scalar val = coeff;
     for(IndexType var_id = 0; var_id < dim; var_id++)
     {
-        val *= pow(x[var_id], _order_var[var_id]);
+        if(_order_var[var_id] != 0)
+        {
+            val *= pow(x[var_id], _order_var[var_id]);
+        }
     }
     return val;
 }
@@ -106,6 +109,249 @@ void polyterm_scalar_mul(PolyTerm * term, Scalar * k){
 }
 void polyterm_print_info(PolyTerm * term){
     term -> print_info();
+}
+
+void polyterm_accumulate_eval(PolyTerm *term, ScalarVec * x_and_res)
+{
+    Scalar res = term->eval(*x_and_res);
+#ifdef DEBUG
+        STDOUT << res << '\n';
+#endif
+    (*x_and_res)[term->dim] += res;
+}
+
+/* PolyMulSweeper */
+PolyMulSweeper::PolyMulSweeper(const Homogen & f, const Homogen & g)
+{
+    N_terms.row_id = f.n_terms;
+    N_terms.col_id = g.n_terms;
+
+    // clear the stack
+    indices_stack.clear();
+
+    // initialize matrices
+    ptr_matrix.resize(N_terms.row_id);
+    for(IndexType curr_row_id = 0; curr_row_id < N_terms.row_id; curr_row_id ++)
+    {
+        ptr_matrix[curr_row_id].resize(N_terms.col_id);
+    }
+    
+    tick_matrix.resize(N_terms.row_id);
+    for(IndexType curr_row_id = 0; curr_row_id < N_terms.row_id; curr_row_id ++)
+    {
+        tick_matrix[curr_row_id].resize(N_terms.col_id);
+        for(IndexType curr_col_id = 0; curr_col_id < N_terms.col_id; curr_col_id ++)
+        {
+            tick_matrix[curr_row_id][curr_col_id] = false;
+        }
+    }
+
+    // fill the ptr matrices by the product
+    PolyTerm *f_ptr, *g_ptr;
+    for(IndexType row = 0; row < N_terms.row_id; row++)
+    {
+        // renew ptr
+        if(row == 0)
+        {
+            f_ptr = f.term_tree;
+        }
+        else
+        {
+            f_ptr = f_ptr -> next;
+        }
+        for(IndexType col = 0; col < N_terms.col_id; col++)
+        {
+            // renew ptr
+            if(col == 0)
+            {
+                g_ptr = g.term_tree;
+            }
+            else
+            {
+                g_ptr = g_ptr -> next;
+            }
+
+            // get a new poly term by the product
+            PolyTerm * new_term = new PolyTerm(f_ptr->operator*(*g_ptr));
+            ptr_matrix[row][col] = new_term;
+        }
+    }
+}
+
+// push new term and tick
+void PolyMulSweeper::push_new_term(MatrixIndexType new_index)
+{
+    // if the new index exceed the bound, do nothing
+    if(new_index.row_id >= N_terms.row_id)
+    {
+        return;
+    }
+    if(new_index.col_id >= N_terms.col_id)
+    {
+        return;
+    }
+    // if the matrix is ticked, return
+    if(tick_matrix[new_index.row_id][new_index.col_id])
+    {
+        return;
+    }
+
+    // push back the new index, and tick
+    indices_stack.push_back(new_index);
+    tick_matrix[new_index.row_id][new_index.col_id] = true;
+}
+
+// get the term (0,0), tick (0,0), (1,0), (0,1) and push the later two
+PolyTerm * PolyMulSweeper::first_term()
+{
+    // return the term (0,0), then push back (0,1), (1,0) 
+    tick_matrix[0][0] = true;
+
+    MatrixIndexType new_index1, new_index2;
+    new_index1.row_id = 1; new_index1.col_id = 0;
+    new_index2.row_id = 0; new_index2.col_id = 1;
+    push_new_term(new_index1);
+    push_new_term(new_index2);
+    return ptr_matrix[0][0];
+}
+
+// find min term, and add all the min term to the vector
+void PolyMulSweeper::find_min_term(std::vector<std::list<MatrixIndexType>::iterator> & min_id_vec)
+{
+    // initialize the vector
+    min_id_vec.clear(); 
+    min_id_vec.push_back(indices_stack.begin());
+
+    // sweep the whole stack
+    std::list<MatrixIndexType>::iterator initial_it = indices_stack.begin();
+    initial_it ++;
+    for(std::list<MatrixIndexType>::iterator stack_it = initial_it; 
+        stack_it != indices_stack.end(); stack_it ++)
+        {
+            PolyTerm * min_poly_term = ptr_matrix[min_id_vec[0]->row_id][min_id_vec[0]->col_id];
+            PolyTerm * curr_poly_term = ptr_matrix[stack_it->row_id][stack_it->col_id];
+            CompareResult res = min_poly_term -> comp(*curr_poly_term);
+            if(res == EQ)
+            {
+                min_id_vec.push_back(stack_it);
+            }
+            else if(res == GT)
+            {
+                min_id_vec.clear();
+                min_id_vec.push_back(stack_it);
+            }
+        }
+}
+
+// get next term. If next term is NULL, return NULL
+PolyTerm* PolyMulSweeper::next_term()
+{
+    // find minimize iterators of current stack
+    std::vector<std::list<MatrixIndexType>::iterator> minimal_terms;
+    find_min_term(minimal_terms);
+
+    // pick the first ptr, and push the lower and right ones
+    MatrixIndexType curr_indices = *(minimal_terms[0]);
+    indices_stack.erase(minimal_terms[0]);
+    PolyTerm * first_ptr = ptr_matrix[
+            curr_indices.row_id][
+            curr_indices.col_id];
+    MatrixIndexType new_mat_id_low, new_mat_id_right;
+    new_mat_id_low.row_id = curr_indices.row_id + 1;
+    new_mat_id_low.col_id = curr_indices.col_id;
+    new_mat_id_right.row_id = curr_indices.row_id;
+    new_mat_id_right.col_id = curr_indices.col_id + 1;
+    push_new_term(new_mat_id_low);
+    push_new_term(new_mat_id_right);
+
+    // if only one element, pop the ptr and return directly
+    if(minimal_terms.size() == 1)
+    {
+        return first_ptr;
+    }
+    else
+    {
+        // else, sweep the second to the last ones, pop the indices, 
+        // add the coefficient to the first ptr, and destroy the terms
+        for(auto min_term_it = minimal_terms.begin() + 1; min_term_it!=minimal_terms.end(); min_term_it ++)
+        {
+            // current indices ptr is (*min_term_it)
+            // pop current indices
+            curr_indices = *(*min_term_it);
+            indices_stack.erase((*min_term_it));
+            PolyTerm * curr_ptr = ptr_matrix[curr_indices.row_id][curr_indices.col_id];
+            first_ptr->coeff += curr_ptr->coeff;
+            curr_ptr -> ~PolyTerm();
+
+            // push new indices
+            new_mat_id_low.row_id = curr_indices.row_id + 1;
+            new_mat_id_low.col_id = curr_indices.col_id;
+            new_mat_id_right.row_id = curr_indices.row_id;
+            new_mat_id_right.col_id = curr_indices.col_id + 1;
+            push_new_term(new_mat_id_low);
+            push_new_term(new_mat_id_right);
+        }
+
+        // check zero. If zero, destroy the ptr and return NULL
+        if(ABS_FUN(first_ptr->coeff) < EPS)
+        {
+            first_ptr -> ~PolyTerm();
+            return NULL;
+        }
+        else
+        {
+            return first_ptr;
+        }
+
+    }
+}
+
+// print all terms in stack
+void PolyMulSweeper::print_stack()
+{
+    STDOUT << "=======Current terms in stacks=======\n";
+    for(std::list<MatrixIndexType>::iterator it = indices_stack.begin(); it != indices_stack.end(); it++)
+    {
+        PolyTerm* curr_ptr = ptr_matrix[it->row_id][it->col_id];
+        STDOUT << "index:(" << it->row_id << ',' << it->col_id <<")\n"; 
+        curr_ptr->print_info();
+    }
+    STDOUT << "=====================================\n";
+}
+
+/* print the tick matrix for debug */
+void PolyMulSweeper::print_tick_matrix()
+{
+    STDOUT << "=======Current ticks=======\n";
+    for(IndexType row = 0; row < N_terms.row_id; row ++)
+    {
+        for(IndexType col = 0; col < N_terms.col_id; col ++)
+        {
+            STDOUT << tick_matrix[row][col] <<',';
+        }
+        STDOUT << '\n';
+    }
+    STDOUT << "=====================================\n";
+}
+
+// check whether is finished
+bool PolyMulSweeper::is_finished()
+{
+    // if is not initialized, return false
+    if(! tick_matrix[0][0])
+    {
+        return false;
+    }
+
+    // check by the length of stack
+    if(indices_stack.size() > 0)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
 }
 
 /* Homogen */
@@ -337,6 +583,46 @@ void Homogen::destructive_add_self(Homogen & another)
     } //while(another.term_tree != NULL)
 }
 
+// remove terms less then EPS
+void Homogen::remove_zeros()
+{
+    if(term_tree == NULL)
+    {
+        return;
+    }
+    
+    // remove iterms at term_tree
+    while(term_tree != NULL)
+    {
+        if(ABS_FUN(term_tree->coeff) < EPS )
+        {
+            PolyTerm * junk_ptr = pop_first_term();
+            junk_ptr -> ~PolyTerm();
+        }
+        else
+        {
+            break;
+        }
+    }
+    if(term_tree == NULL)
+    {
+        return;
+    }
+
+    PolyTerm* curr_ptr = term_tree;
+    while(curr_ptr->next != NULL)
+    {
+        if(ABS_FUN(curr_ptr->next->coeff)<EPS)
+        {
+            PolyTerm * junk_ptr = pop_next_term(curr_ptr);
+            junk_ptr -> ~PolyTerm();
+        }
+        else
+        {
+            curr_ptr = curr_ptr->next;
+        }
+    }
+}
 
 // add up to the third object, and all the terms of self and the other operand
 // will all be destroyed.
@@ -446,4 +732,51 @@ void Homogen::add(Homogen & another, Homogen & result_copy)
     // copy self
     copy(result_copy);
     result_copy.add_self(another);
+}
+
+// eval
+Scalar Homogen::eval(const ScalarVec & x)
+{
+    // evaluation of the homogen
+    ScalarVec x_and_res(dim+1);
+    
+    // initialize
+    for(IndexType var_id = 0; var_id < dim; var_id++)
+    {
+        x_and_res[var_id] = x[var_id];
+    }
+    x_and_res[dim] = Scalar(0.0);
+
+    // evaluate
+    traverse_from_node<PolyTerm, ScalarVec>(term_tree, polyterm_accumulate_eval, &x_and_res);
+    return x_and_res[dim];
+}
+
+void homogen_multiplication(const Homogen & f, const Homogen & g, Homogen & h)
+{
+    assert(f.dim == g.dim);
+
+    // total order  = f.order + g.order, dim = f.dim
+    h.reinit(f.dim, f.order + g.order);
+    if(f.term_tree == NULL || g.term_tree == NULL)
+    {
+        return;
+    }
+
+    // create sweeper
+    PolyMulSweeper sweeper(f, g);
+
+    // add first term
+    h.insert_at_head(sweeper.first_term());
+    PolyTerm * curr_ptr = h.term_tree;
+
+    // add remaining terms
+    while(! sweeper.is_finished())
+    {
+        PolyTerm * next_term = sweeper.next_term();
+        if(next_term != NULL)
+        {
+            h.add_term_after_ptr(curr_ptr, next_term);
+        }
+    }
 }

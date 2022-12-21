@@ -7,23 +7,16 @@
 #ifndef POLYS_H
 #define POLYS_H 
 
+#include "basic_defs.h"
+
 #include <complex>
 #include <vector>
+#include <list>
 #include <string>
 #include <assert.h>
 #include "linklist_tools.hpp"
-
-typedef std::complex<double> Scalar;
-typedef unsigned int IndexType;
-typedef std::vector<Scalar> ScalarVec;
-typedef std::vector<IndexType> IndexVec; 
-
-typedef enum{GT, EQ, LT, GEQ, LEQ} CompareResult;
-
-#define STDOUT std::cout
-#define EPS 1e-15
-#define ABS_FUN abs
 #include <iostream>
+
 
 /* Monomial: type for multivarite monomial */
 class Monomial
@@ -49,7 +42,7 @@ public:
 
     /* Mathematics */
     // evaluation
-    Scalar eval(ScalarVec x);
+    Scalar eval(ScalarVec & x);
 
     // monomial product
     Monomial operator*(Monomial monomial_another);
@@ -115,6 +108,16 @@ public:
 void polyterm_turn_neg(PolyTerm * term);
 void polyterm_scalar_mul(PolyTerm * term, Scalar * k);
 void polyterm_print_info(PolyTerm * term);
+void polyterm_accumulate_eval(PolyTerm *term, ScalarVec * x_and_res);
+
+/* Tools for homogen multiplication */
+typedef struct MatrixIndexType
+{
+    IndexType row_id;
+    IndexType col_id;
+} MatrixIndexType;
+
+
 
 /* Homogeneous polymial*/
 class Homogen
@@ -141,6 +144,8 @@ public:
         destroy_tree<PolyTerm>(this->term_tree);
         this->term_tree = NULL;
     }
+
+    void remove_zeros();
     void copy(Homogen &);
     void copy_call(void (*funcall)(PolyTerm*), Homogen &);
     
@@ -267,6 +272,42 @@ public:
         another.neg_self();
         destructive_add(another, new_homog);
     }
+
+    /* Evaluation */
+    Scalar eval(const ScalarVec & x);
 };
+
+class PolyMulSweeper
+{
+public:
+    PolyMulSweeper(const Homogen & f, const Homogen & g);
+
+    MatrixIndexType N_terms;
+
+    /* give the first term (0,0) of the ptr matrix */
+    PolyTerm* first_term();
+
+    /* give the next term of the ptr matrix*/
+    PolyTerm* next_term();
+
+    /* check whether the sweep is finished */
+    bool is_finished();
+
+    /* print the terms in stack for debug */
+    void print_stack();
+
+    /* print the tick matrix for debug */
+    void print_tick_matrix();
+
+private:
+    void push_new_term(MatrixIndexType new_index);
+    void find_min_term(std::vector<std::list<MatrixIndexType>::iterator> & min_id_vec);
+    std::list<MatrixIndexType> indices_stack;
+    std::vector<std::vector<PolyTerm*>> ptr_matrix;
+    std::vector<std::vector<bool>> tick_matrix;
+};
+
+/* Homogen arithmatics */
+void homogen_multiplication(const Homogen & f, const Homogen & g, Homogen & h);
 
 #endif
