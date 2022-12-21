@@ -6,6 +6,7 @@
 
 #include "polys.h"
 #include <math.h>
+#include "poly_utils.h"
 
 /* Monomial */
 
@@ -773,10 +774,258 @@ void homogen_multiplication(const Homogen & f, const Homogen & g, Homogen & h)
     // add remaining terms
     while(! sweeper.is_finished())
     {
+    #ifdef DEBUG
+        sweeper.print_stack();
+    #endif
         PolyTerm * next_term = sweeper.next_term();
+    #ifdef DEBUG
+        next_term -> print_info();
+    #endif
         if(next_term != NULL)
         {
             h.add_term_after_ptr(curr_ptr, next_term);
+            curr_ptr = curr_ptr->next;
+        }
+    }
+}
+
+// get the multiplication of the homogenerous polynomials in f_seq
+void homogen_mul_seq(std::vector<Homogen*> & f_seq, IndexType total_order, Homogen & res)
+{
+    Homogen temp_homogen0 = Homogen(f_seq[0]->dim, f_seq[0]->order);
+    Homogen temp_homogen1 = Homogen(f_seq[1]->dim, f_seq[1]->order);
+    Homogen* temp_homogen_ptr[2] = {&temp_homogen0, &temp_homogen1};
+    f_seq[0] -> copy(temp_homogen0);
+
+    // copy the first one in f_seq, mult the new one
+    for(IndexType f_id = 1; f_id < f_seq.size(); f_id ++)
+    {
+        Homogen* curr_ptr = temp_homogen_ptr[((f_id+1) % 2)];
+        Homogen* res_ptr = temp_homogen_ptr[(f_id % 2)];
+        homogen_multiplication(*curr_ptr, *(f_seq[f_id]), *res_ptr);
+    #ifdef DEBUG
+        curr_ptr -> print_info();
+        f_seq[f_id] -> print_info();
+        res_ptr -> print_info();
+        STDOUT << '\n';
+    #endif
+    }
+
+    // return the result
+    temp_homogen_ptr[(f_seq.size()+1)%2]->copy(res);
+}
+
+
+/* Series */
+Scalar Series::eval(const ScalarVec & x)
+{
+    Scalar res = Scalar(0.0);
+    for(IndexType k = 0; k < Kmax; k++)
+    {
+        res += homogen_terms[k] -> eval(x);
+    }
+    return res;
+}
+
+// add term to current series
+void Series::add_term(Monomial term)
+{
+    if(term.order < Kmax)
+    {
+        homogen_terms[term.order] -> add_term(term);
+    }
+}
+
+// add homogen to current series
+void Series::add_homogen(Homogen & homog)
+{
+    if(homog.order < Kmax)
+    {
+        homogen_terms[homog.order] -> add_self(homog); 
+    }
+}
+
+// destructive add homogen to current series
+void Series::destructive_add_homogen(Homogen & homog)
+{
+    if(homog.order<Kmax)
+    {
+        homogen_terms[homog.order] -> destructive_add_self(homog);
+    }
+    else
+    {
+        homog.reinit(homog.dim, homog.order);
+    }
+}
+
+// add series
+void Series::add_series(const Series & new_series)
+{
+    for(IndexType k = 0; (k < Kmax && k < new_series.Kmax); k++)
+    {
+        homogen_terms[k]->add_self(*(new_series.homogen_terms[k]));
+    }
+}
+
+// destructive add series
+void Series::destructive_add_series(Series & new_series)
+{
+    for(IndexType k = 0; (k< Kmax && k < new_series.Kmax); k++)
+    {
+        homogen_terms[k] -> destructive_add_self(*(new_series.homogen_terms[k]));
+    }
+}
+
+// reinit
+void Series::reinit()
+{
+    for(IndexType k = 0; k < Kmax; k++)
+    {
+        homogen_terms[k] -> reinit(dim, k);
+    }
+}
+
+// arithmatics by order
+void series_mul(Series & f, Series & g, IndexType k, Homogen& res)
+{
+    assert(f.dim == g.dim);
+    res.reinit(f.dim, k);
+
+    // Sweep the all combinations with total order k
+    Homogen current_mul(f.dim, k);
+    for(IndexType k_f =0; k_f <= k; k_f ++)
+    {
+        IndexType k_g = k - k_f;
+        if(k_f >= f.Kmax)
+        {
+            continue;
+        }
+        if(k_g >= g.Kmax)
+        {
+            continue;
+        }
+        homogen_multiplication(*(f.homogen_terms[k_f]), *(g.homogen_terms[k_g]), current_mul);
+        assert(current_mul.order == k);
+        res.destructive_add_self(current_mul);
+    }
+}
+
+
+
+// composition of a monomial f and a series vec, and return the index k term to the result
+void term_comp(Monomial & f, std::vector<Series*> & series_vec, IndexType k, Homogen& res)
+{
+    assert(f.dim == series_vec.size());
+    res.reinit(series_vec[0]->dim, k);
+
+    // initialize the vectors for series ptr and homogen order
+    std::vector<IndexType> homog_order(f.order);
+    std::vector<Series*> series_ptr(f.order);
+    std::vector<Series*>::iterator series_it = series_ptr.begin();
+    for(IndexType new_term_var_id = 0; new_term_var_id < f.dim; new_term_var_id++)
+    {
+        for(IndexType j = 0; j < f.var_order(new_term_var_id); j++)
+        {
+            (*series_it) = series_vec[new_term_var_id];  
+            series_it ++;
+        }
+    }
+
+    std::vector<Homogen*> homog_ptr(f.order);
+
+    // sweep all combination with total sum k
+    IndexVec sep_vec(f.order - 1);
+    for(auto it = sep_vec.begin(); it != sep_vec.end(); it++)
+    {
+        *it = 0;
+    }
+
+    Homogen homog_temp(series_vec[0]->dim, k);
+    do
+    {
+        // sweep combinations
+        const_sum_sepper_to_data(sep_vec, homog_order, k);
+
+        // check whether to dump the term
+        bool dump = false;
+        for(IndexType homog_id = 0; homog_id < f.order; homog_id ++)
+        {
+            if(homog_order[homog_id] >= series_ptr[homog_id] -> Kmax)            
+            {
+                dump = true;
+                break;
+            }
+            homog_ptr[homog_id] = series_ptr[homog_id] -> homogen_terms[homog_order[homog_id]];
+
+            if(homog_ptr[homog_id]->term_tree == NULL)
+            {
+                // empty term
+                dump = true;
+                break;
+            }
+        }
+        #ifdef DEBUG
+            for(auto it = homog_order.begin(); it != homog_order.end(); it++)
+            {
+                STDOUT << (*it) <<',';
+            }
+            STDOUT << "\n homog_temp: \n";
+        #endif
+
+        // if not dump, sum and add to the result
+        if(! dump)
+        {
+            homogen_mul_seq(homog_ptr, k, homog_temp);
+            assert(homog_temp.order == k);
+
+          
+            res.destructive_add_self(homog_temp);
+        }
+    }while(! const_sum_next(sep_vec, k));
+
+    res.scalar_mul_self(f.coeff);
+}
+
+void series_comp(Series &f, std::vector<Series*> & series_vec, IndexType k, Homogen& res)
+{
+
+    assert(f.dim == series_vec.size());
+    res.reinit(series_vec[0]->dim, k);
+    Homogen curr_result(series_vec[0]->dim, k);
+
+    for(IndexType f_k = 0; f_k < f.Kmax; f_k ++)
+    {
+        Homogen & curr_homogen = *f.homogen_terms[f_k];
+        PolyTerm * curr_term = curr_homogen.term_tree;
+        while(curr_term != NULL)
+        {
+            term_comp(*curr_term, series_vec, k, curr_result);
+            res.destructive_add_self(curr_result);
+            curr_term = curr_term -> next;
+        }
+    }
+}
+
+
+// multiply a matrix to a series vector
+void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> scalar_matrix,
+        const SeriesVec & input_series, SeriesVec & output_series)
+{
+    assert(scalar_matrix.cols() == input_series.val_dim);
+    assert(scalar_matrix.rows() == output_series.val_dim);
+    assert(input_series.var_dim == output_series.var_dim);
+
+    output_series.reinit();
+    Series temp_series(input_series.Kmax, input_series.var_dim);
+    temp_series.reinit();
+    // for each row
+    for(IndexType row_id = 0; row_id < scalar_matrix.rows(); row_id ++)
+    {
+        for(IndexType col_id = 0; col_id < scalar_matrix.cols(); col_id++)
+        {
+            temp_series.add_series(*(input_series.series_vec[col_id]));
+            temp_series.scalar_mul_self(scalar_matrix(row_id, col_id));
+            (output_series.series_vec[row_id]) -> destructive_add_series(temp_series);
         }
     }
 }

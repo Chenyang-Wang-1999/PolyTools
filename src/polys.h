@@ -16,6 +16,7 @@
 #include <assert.h>
 #include "linklist_tools.hpp"
 #include <iostream>
+#include <eigen3/Eigen/Core>
 
 
 /* Monomial: type for multivarite monomial */
@@ -309,5 +310,93 @@ private:
 
 /* Homogen arithmatics */
 void homogen_multiplication(const Homogen & f, const Homogen & g, Homogen & h);
+void homogen_mul_seq(std::vector<Homogen*> & f_seq, IndexType total_order, Homogen & res);
+
+// series of homogenerous polynomial, with maximum order recorded by Kmax
+class Series
+{
+public:
+    IndexType Kmax;
+    IndexType dim;
+    Series(IndexType Kmax, IndexType dim): Kmax(Kmax), dim(dim)
+    {
+        homogen_terms.resize(Kmax);
+        for(IndexType k = 0; k < Kmax; k++)
+        {
+            homogen_terms[k] = new Homogen(dim, k);
+        }
+    }
+    ~Series(){
+        for(IndexType k=0; k<Kmax; k++)
+        {
+            homogen_terms[k] -> ~Homogen();
+        }
+        homogen_terms.clear();
+    }
+
+    // reinitialize to zeros
+    void reinit();
+
+    /* mathematics */
+    void add_term(Monomial term);
+    void add_homogen(Homogen & homog);
+    void destructive_add_homogen(Homogen & homog);
+    void add_series(const Series & new_series);
+    void destructive_add_series(Series & new_series);
+    void scalar_mul_self(Scalar k)
+    {
+        for(auto it=homogen_terms.begin(); it != homogen_terms.end(); it++)
+        {
+            (*it) -> scalar_mul_self(k);
+        }
+    }
+    Scalar eval(const ScalarVec & x);
+    std::vector<Homogen*> homogen_terms;
+};
+
+// arithmatics by order
+void series_mul(Series & f, Series & g, IndexType k, Homogen& res);
+void term_comp(Monomial & f, std::vector<Series*> & series_vec, IndexType k, Homogen& res);
+void series_comp(Series &f, std::vector<Series*> & series_vec, IndexType k, Homogen& res);
+
+// series vector
+class SeriesVec
+{
+public:
+    IndexType var_dim, val_dim;
+    IndexType Kmax;
+    std::vector<Series*> series_vec;
+
+    SeriesVec(IndexType var_dim, IndexType val_dim, IndexType Kmax):
+        var_dim(var_dim), val_dim(val_dim), Kmax(Kmax)
+        {
+            series_vec.resize(val_dim);
+            for(auto it = series_vec.begin(); it!= series_vec.end(); it++)
+            {
+                (*it) = new Series(Kmax, var_dim);
+            }
+        }
+    
+    ~SeriesVec()
+    {
+        for(auto it = series_vec.begin(); it != series_vec.end(); it ++)
+        {
+            (*it) -> ~Series();
+        }
+        series_vec.clear();
+    }
+
+    void reinit()
+    {
+        for(auto it = series_vec.begin(); it != series_vec.end(); it ++)
+        {
+            (*it) -> reinit();
+        }
+    }
+};
+
+
+void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> scalar_matrix,
+        const SeriesVec & input_series, SeriesVec & output_series);
 
 #endif
