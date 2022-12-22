@@ -308,15 +308,11 @@ void InvariantManifoldSolver::calculate_curr_Ek()
     for(IndexType val_id = 0; val_id < phys_dim; val_id ++)
     {
         Homogen FW(manifold_dim, next_k), DWf(manifold_dim, next_k);
+
         // calculate FW
         series_comp(*(F.series_vec[val_id]), W.series_vec, next_k, FW);
-        // debug
-        STDOUT << "FW:\n";
-        FW.print_info();
         Ek.homog_vec[val_id] -> destructive_add_self(FW);
         series_DW_dot_f(*(W.series_vec[val_id]), f.series_vec, next_k, DWf);
-        STDOUT << "DWf:\n";
-        DWf.print_info();
         Ek.homog_vec[val_id] -> destructive_subs_self(DWf);
     }
 }

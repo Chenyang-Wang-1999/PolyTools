@@ -134,9 +134,6 @@ void polyterm_print_info(PolyTerm * term){
 void polyterm_accumulate_eval(PolyTerm *term, ScalarVec * x_and_res)
 {
     Scalar res = term->eval(*x_and_res);
-#ifdef DEBUG
-        STDOUT << res << '\n';
-#endif
     (*x_and_res)[term->dim] += res;
 }
 
@@ -848,13 +845,9 @@ void homogen_multiplication(const Homogen & f, const Homogen & g, Homogen & h)
     // add remaining terms
     while(! sweeper.is_finished())
     {
-    #ifdef DEBUG
-        sweeper.print_stack();
-    #endif
+
         PolyTerm * next_term = sweeper.next_term();
-    #ifdef DEBUG
-        next_term -> print_info();
-    #endif
+
         if(next_term != NULL)
         {
             h.add_term_after_ptr(curr_ptr, next_term);
@@ -877,12 +870,7 @@ void homogen_mul_seq(std::vector<Homogen*> & f_seq, IndexType total_order, Homog
         Homogen* curr_ptr = temp_homogen_ptr[((f_id+1) % 2)];
         Homogen* res_ptr = temp_homogen_ptr[(f_id % 2)];
         homogen_multiplication(*curr_ptr, *(f_seq[f_id]), *res_ptr);
-    #ifdef DEBUG
-        curr_ptr -> print_info();
-        f_seq[f_id] -> print_info();
-        res_ptr -> print_info();
-        STDOUT << '\n';
-    #endif
+
     }
 
     // return the result
@@ -1046,20 +1034,36 @@ void term_comp(Monomial & f, std::vector<Series*> & series_vec, IndexType k, Hom
         }
     }
 
+    // set k max and k min
+    IndexVec k_min_list(f.order), k_max_list(f.order);
+    for(IndexType series_id = 0; series_id < f.order; series_id ++)
+    {
+        if(series_ptr[series_id] -> curr_kmax <= series_ptr[series_id] -> curr_kmin)
+        {
+            return;
+        }
+        else
+        {
+            k_min_list[series_id] = series_ptr[series_id] -> curr_kmin;
+            k_max_list[series_id] = series_ptr[series_id] -> curr_kmax;
+        }
+    }
+
     std::vector<Homogen*> homog_ptr(f.order);
 
     // sweep all combination with total sum k
-    IndexVec sep_vec(f.order - 1);
-    for(auto it = sep_vec.begin(); it != sep_vec.end(); it++)
+    IndexVec sep_vec(f.order + 1);
+    bool init_successful = boards_left_most(sep_vec, 0, k_min_list, k_max_list, k);
+    if(! init_successful)
     {
-        *it = 0;
+        return;
     }
 
     Homogen homog_temp(series_vec[0]->dim, k);
     do
     {
         // sweep combinations
-        const_sum_boards_to_data(sep_vec, homog_order, k);
+        const_sum_boards_to_data(sep_vec, homog_order);
 
 
         // check whether to dump the term
@@ -1080,13 +1084,7 @@ void term_comp(Monomial & f, std::vector<Series*> & series_vec, IndexType k, Hom
                 break;
             }
         }
-        #ifdef DEBUG
-            for(auto it = homog_order.begin(); it != homog_order.end(); it++)
-            {
-                STDOUT << (*it) <<',';
-            }
-            STDOUT << "\n homog_temp: \n";
-        #endif
+
 
         // if not dump, sum and add to the result
         if(! dump)
@@ -1097,7 +1095,7 @@ void term_comp(Monomial & f, std::vector<Series*> & series_vec, IndexType k, Hom
           
             res.destructive_add_self(homog_temp);
         }
-    }while(! const_sum_next(sep_vec, k));
+    }while(! const_sum_next(sep_vec, k_min_list, k_max_list));
 
     res.scalar_mul_self(f.coeff);
 }
