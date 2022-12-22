@@ -1059,7 +1059,7 @@ void term_comp(Monomial & f, std::vector<Series*> & series_vec, IndexType k, Hom
     do
     {
         // sweep combinations
-        const_sum_sepper_to_data(sep_vec, homog_order, k);
+        const_sum_boards_to_data(sep_vec, homog_order, k);
 
 
         // check whether to dump the term
