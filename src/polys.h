@@ -74,6 +74,7 @@ public:
         return ((res == EQ) || (res == LT));
     }
 
+    Monomial derivative(IndexType var_id);
 
     /* Utilities */
     IndexType var_order(IndexType var_id){return _order_var[var_id];}
@@ -125,7 +126,7 @@ class Homogen
 {
 public:
     IndexType n_terms, dim, order;
-    PolyTerm * term_tree;
+    PolyTerm * term_tree = NULL;
     Homogen(IndexType dim, IndexType order):dim(dim), order(order){
         n_terms = 0;
         term_tree = NULL;
@@ -274,6 +275,9 @@ public:
         destructive_add(another, new_homog);
     }
 
+    // derivative
+    void derivative(IndexType var_id, Homogen & res);
+
     /* Evaluation */
     Scalar eval(const ScalarVec & x);
 };
@@ -318,6 +322,8 @@ class Series
 public:
     IndexType Kmax;
     IndexType dim;
+    IndexType curr_kmin;
+    IndexType curr_kmax;
     Series(IndexType Kmax, IndexType dim): Kmax(Kmax), dim(dim)
     {
         homogen_terms.resize(Kmax);
@@ -325,6 +331,8 @@ public:
         {
             homogen_terms[k] = new Homogen(dim, k);
         }
+        curr_kmin = Kmax;
+        curr_kmax = 0;
     }
     ~Series(){
         for(IndexType k=0; k<Kmax; k++)
@@ -337,7 +345,30 @@ public:
     // reinitialize to zeros
     void reinit();
 
+    // print information
+    void print_info()
+    {
+        for(IndexType k=curr_kmin; k<curr_kmax; k++)
+        {
+            if(homogen_terms[k]->term_tree != NULL)
+            {
+                homogen_terms[k] -> print_info();
+            }
+        }
+    }
+
     /* mathematics */
+    void update_order_bound(IndexType new_order)
+    {
+        if(new_order < curr_kmin)
+        {
+            curr_kmin = new_order;
+        }
+        if(new_order >= curr_kmax)
+        {
+            curr_kmax = new_order + 1;
+        }
+    }
     void add_term(Monomial term);
     void add_homogen(Homogen & homog);
     void destructive_add_homogen(Homogen & homog);
@@ -350,6 +381,7 @@ public:
             (*it) -> scalar_mul_self(k);
         }
     }
+    void derivative(IndexType var_id, Series & res);
     Scalar eval(const ScalarVec & x);
     std::vector<Homogen*> homogen_terms;
 };
@@ -358,6 +390,7 @@ public:
 void series_mul(Series & f, Series & g, IndexType k, Homogen& res);
 void term_comp(Monomial & f, std::vector<Series*> & series_vec, IndexType k, Homogen& res);
 void series_comp(Series &f, std::vector<Series*> & series_vec, IndexType k, Homogen& res);
+void series_DW_dot_f(Series & W, std::vector<Series*> & f_vec, IndexType k, Homogen & res);
 
 // series vector
 class SeriesVec
@@ -393,10 +426,84 @@ public:
             (*it) -> reinit();
         }
     }
+
+    void print_info()
+    {
+        for(IndexType val_id = 0; val_id < val_dim; val_id ++)
+        {
+            STDOUT << "########################################\n";
+            STDOUT << "Current value:" << val_id << '\n';
+            series_vec[val_id] -> print_info();
+            STDOUT << "########################################\n";
+        }
+    }
+};
+
+// Homogen vector
+class HomogenVec
+{
+public:
+    IndexType var_dim, val_dim;
+    IndexType order;
+    std::vector<Homogen*> homog_vec;
+
+    HomogenVec(IndexType var_dim, IndexType val_dim, IndexType order):
+        var_dim(var_dim), val_dim(val_dim), order(order)
+        {
+            homog_vec.resize(val_dim);
+            for(auto it = homog_vec.begin(); it!= homog_vec.end(); it++)
+            {
+                (*it) = new Homogen(var_dim, order);
+            }
+        }
+    
+    ~HomogenVec()
+    {
+        for(auto it = homog_vec.begin(); it != homog_vec.end(); it ++)
+        {
+            (*it) -> ~Homogen();
+        }
+        homog_vec.clear();
+    }
+
+    void reinit()
+    {
+        for(auto it = homog_vec.begin(); it != homog_vec.end(); it ++)
+        {
+            (*it) -> reinit(var_dim, order);
+        }
+    }    
+    
+    void reinit(IndexType new_order)
+    {
+        this->order = new_order;
+        for(auto it = homog_vec.begin(); it != homog_vec.end(); it ++)
+        {
+            (*it) -> reinit(var_dim, order);
+        }
+    }
+
+    void print_info()
+    {
+        for(IndexType val_id = 0; val_id < val_dim; val_id ++)
+        {
+            STDOUT << "########################################\n";
+            STDOUT << "Current value:" << val_id << '\n';
+            homog_vec[val_id] -> print_info();
+            STDOUT << "########################################\n";
+        }
+    }
 };
 
 
 void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> scalar_matrix,
         const SeriesVec & input_series, SeriesVec & output_series);
+
+void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> scalar_matrix,
+        const HomogenVec & input_series, HomogenVec & output_series);
+
+
+void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> scalar_matrix,
+        const std::vector<Homogen*> & input_series, HomogenVec & output_series);
 
 #endif

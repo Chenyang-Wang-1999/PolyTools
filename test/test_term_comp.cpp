@@ -8,7 +8,7 @@
 
 int main()
 {
-    IndexType N_terms=4, order=5, dim=2, n_seq = 3;
+    IndexType N_terms=4, order=1, dim=2, n_seq = 3;
     IndexType K_max =20;
     IndexType k_target = 0;
     std::vector<Series*> series_ptr(n_seq);
@@ -25,7 +25,7 @@ int main()
     series_ptr[2] -> add_term(Monomial(Scalar(1.0),{1,0}));
     series_ptr[2] -> add_term(Monomial(Scalar(2.0),{0,2}));
 
-    // Monomial f(Scalar(3.0,2.0), {2,1,1});
+    // Monomial f(Scalar(1.0,0.0), {0,0,1});
     Series f(20, 3);
     f.add_term(Monomial(Scalar(3.0,2.0),{2,1,1}));
     f.add_term(Monomial(Scalar(-2.0,0.0),{1,0,1}));
@@ -35,6 +35,7 @@ int main()
     {
         STDOUT << "k target:" << k_target << '\n';
         series_comp(f, series_ptr, k_target, res);
+        // term_comp(f, series_ptr, k_target, res);
         res.print_info();
     }
 

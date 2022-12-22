@@ -20,18 +20,14 @@ int main()
     }
 
     // create series vector
-    SeriesVec input_series(3, 2, 20), output_series(3,3,20);
+    // SeriesVec input_series(3, 2, 20), output_series(3,3,20);
+    HomogenVec input_series(3,2, 5), output_series(3,3,5);
     for(IndexType i = 0; i < 2; i++)
     {
-        for(IndexType j = 0; j < 5; j++)
-        {
-            IndexType order = rand() % 10;
-            Homogen * g_ptr = new Homogen(3, order);
-            random_homogen(10, order, 3, *g_ptr);
-            input_series.series_vec[i] -> destructive_add_homogen(*g_ptr);
-            g_ptr->~Homogen();
-        }
-        v(i) = input_series.series_vec[i] -> eval(x_vec);
+        Homogen * g_ptr = new Homogen(3, 5);
+        random_homogen(10, 5, 3, *g_ptr);
+        input_series.homog_vec[i] = g_ptr;
+        v(i) = input_series.homog_vec[i] -> eval(x_vec);
     }
     STDOUT << "v vec\n";
     STDOUT << v <<'\n';
@@ -44,7 +40,12 @@ int main()
     STDOUT << "series product:\n";
     for(IndexType i = 0; i<3; i++)
     {
-        STDOUT << output_series.series_vec[i] -> eval(x_vec) <<'\n';
+        STDOUT << output_series.homog_vec[i] -> eval(x_vec) <<'\n';
     }
+    input_series.homog_vec[0]->print_info();
+    input_series.homog_vec[1]->print_info();
+    output_series.homog_vec[0]->print_info();
+    output_series.homog_vec[1]->print_info();
+    output_series.homog_vec[2]->print_info();
     return 0;
 }

@@ -74,6 +74,24 @@ CompareResult Monomial::comp(Monomial monomial_another)
     return EQ;
 }
 
+// derivative
+Monomial Monomial::derivative(IndexType var_id)
+{
+    IndexVec der_order(_order_var);
+    // if order = 0, set coefficient = 0
+    if(der_order[var_id] == 0)
+    {
+        return Monomial(Scalar(0.0), der_order);
+    }
+    else
+    {
+        // multiply coefficient by order
+        Scalar new_coeff = coeff * Scalar(der_order[var_id]);
+        // decrease the current order by 1
+        der_order[var_id] --;
+        return Monomial(new_coeff, der_order);
+    }
+}
 
 // monomial power
 Monomial Monomial::power(IndexType n)
@@ -111,6 +129,7 @@ void polyterm_scalar_mul(PolyTerm * term, Scalar * k){
 void polyterm_print_info(PolyTerm * term){
     term -> print_info();
 }
+
 
 void polyterm_accumulate_eval(PolyTerm *term, ScalarVec * x_and_res)
 {
@@ -427,6 +446,12 @@ void Homogen::copy_call(void (*funcall)(PolyTerm *), Homogen & new_homog)
 void Homogen::add_term(PolyTerm * new_term)
 {
     assert(new_term != NULL);
+    if(ABS_FUN(new_term->coeff) < EPS)
+    {
+        new_term -> ~PolyTerm();
+        return;
+    }
+
     CompareResult res = GT;
     // 0 if the tree is empty, add directly to the first term
     if(term_tree == NULL){
@@ -540,6 +565,9 @@ void Homogen::destructive_add_self(Homogen & another)
                    check the first term of *this.
                    */
                 break;
+            default:
+                STDOUT << "Error: compare result is not GT, LT or EQ\n";
+                assert(0);
             }
         } // if(is_first_term)
         else
@@ -577,6 +605,9 @@ void Homogen::destructive_add_self(Homogen & another)
                         junk_ptr -> ~PolyTerm();
                     }
                     break;
+                default:
+                    STDOUT << "Error: compare result is not GT, LT or EQ\n";
+                    assert(0);
                 }
             } //if(LHS_ptr -> next == NULL)else
         } // if(is_first_term)else
@@ -635,6 +666,7 @@ void Homogen::destructive_add(Homogen & another, Homogen & new_homog)
     new_homog.reinit(dim, order);
 
     PolyTerm * new_term_ptr=NULL, *insert_pos_ptr=NULL;
+    PolyTerm * another_term_ptr = NULL;
     while((term_tree!=NULL) || (another.term_tree != NULL))
     {
         if(term_tree == NULL)
@@ -679,10 +711,13 @@ void Homogen::destructive_add(Homogen & another, Homogen & new_homog)
                 break;
             case EQ:
                 new_term_ptr = pop_first_term();
-                PolyTerm * another_term_ptr = another.pop_first_term();
+                another_term_ptr = another.pop_first_term();
                 new_term_ptr->coeff += another_term_ptr -> coeff;
                 another_term_ptr->~PolyTerm();
                 break;
+            default:
+                STDOUT << "Error: compare result is not GT, LT or EQ\n";
+                assert(0);
             }
 
             // Insert to new 
@@ -733,6 +768,45 @@ void Homogen::add(Homogen & another, Homogen & result_copy)
     // copy self
     copy(result_copy);
     result_copy.add_self(another);
+}
+
+
+// derivative
+void Homogen::derivative(IndexType var_id, Homogen & res)
+{
+
+    // if *this is constant, then return zero homogen
+    if(order == 0)
+    {
+        res.reinit(dim, 0);
+        return;
+    }
+
+
+    res.reinit(dim, order - 1);
+    PolyTerm * new_term_ptr = NULL;
+    PolyTerm * curr_term_ptr = term_tree;
+    while(curr_term_ptr != NULL)
+    {
+        Monomial term_der = curr_term_ptr->derivative(var_id);
+        if(ABS_FUN(term_der.coeff)>EPS)
+        {
+            PolyTerm* new_term = new PolyTerm(term_der);
+            if(res.n_terms == 0)
+            {
+                res.insert_at_head(new_term);
+                new_term_ptr = res.term_tree;
+            }
+            else
+            {
+                res.add_term_after_ptr(new_term_ptr, new_term);
+                new_term_ptr = new_term_ptr->next;
+            }
+        }
+
+        curr_term_ptr = curr_term_ptr->next;
+    }
+
 }
 
 // eval
@@ -820,7 +894,7 @@ void homogen_mul_seq(std::vector<Homogen*> & f_seq, IndexType total_order, Homog
 Scalar Series::eval(const ScalarVec & x)
 {
     Scalar res = Scalar(0.0);
-    for(IndexType k = 0; k < Kmax; k++)
+    for(IndexType k = curr_kmin; k < curr_kmax; k++)
     {
         res += homogen_terms[k] -> eval(x);
     }
@@ -833,6 +907,7 @@ void Series::add_term(Monomial term)
     if(term.order < Kmax)
     {
         homogen_terms[term.order] -> add_term(term);
+        update_order_bound(term.order);
     }
 }
 
@@ -842,6 +917,7 @@ void Series::add_homogen(Homogen & homog)
     if(homog.order < Kmax)
     {
         homogen_terms[homog.order] -> add_self(homog); 
+        update_order_bound(homog.order);
     }
 }
 
@@ -851,6 +927,7 @@ void Series::destructive_add_homogen(Homogen & homog)
     if(homog.order<Kmax)
     {
         homogen_terms[homog.order] -> destructive_add_self(homog);
+        update_order_bound(homog.order);
     }
     else
     {
@@ -861,19 +938,25 @@ void Series::destructive_add_homogen(Homogen & homog)
 // add series
 void Series::add_series(const Series & new_series)
 {
-    for(IndexType k = 0; (k < Kmax && k < new_series.Kmax); k++)
+    for(IndexType k = new_series.curr_kmin; (k < Kmax && k < new_series.curr_kmax); k++)
     {
         homogen_terms[k]->add_self(*(new_series.homogen_terms[k]));
     }
+    update_order_bound(new_series.curr_kmin);
+    update_order_bound(new_series.curr_kmax);
 }
 
 // destructive add series
 void Series::destructive_add_series(Series & new_series)
 {
-    for(IndexType k = 0; (k< Kmax && k < new_series.Kmax); k++)
+    for(IndexType k = new_series.curr_kmin; (k< Kmax && k < new_series.curr_kmax); k++)
     {
         homogen_terms[k] -> destructive_add_self(*(new_series.homogen_terms[k]));
     }
+    update_order_bound(new_series.curr_kmin);
+    update_order_bound(new_series.curr_kmax);
+    new_series.curr_kmax = 0; new_series.curr_kmin = new_series.Kmax;
+
 }
 
 // reinit
@@ -883,6 +966,20 @@ void Series::reinit()
     {
         homogen_terms[k] -> reinit(dim, k);
     }
+    curr_kmin = Kmax;
+    curr_kmax = 0;
+}
+
+// derivative
+void Series::derivative(IndexType var_id, Series & res)
+{
+    res.reinit();
+    for(IndexType k = 1; k < curr_kmax && k < (res.Kmax+1); k++)
+    {
+        homogen_terms[k]->derivative(var_id, *(res.homogen_terms[k-1]));
+    }
+    res.update_order_bound(curr_kmin - 1);
+    res.update_order_bound(curr_kmax - 1);
 }
 
 // arithmatics by order
@@ -893,16 +990,20 @@ void series_mul(Series & f, Series & g, IndexType k, Homogen& res)
 
     // Sweep the all combinations with total order k
     Homogen current_mul(f.dim, k);
-    for(IndexType k_f =0; k_f <= k; k_f ++)
+    for(IndexType k_f = f.curr_kmin; (k_f <= k && k_f < f.curr_kmax); k_f ++)
     {
         IndexType k_g = k - k_f;
         if(k_f >= f.Kmax)
         {
             continue;
         }
-        if(k_g >= g.Kmax)
+        if(k_g >= g.curr_kmax)
         {
             continue;
+        }
+        if(k_g < g.curr_kmin)
+        {
+            break;
         }
         homogen_multiplication(*(f.homogen_terms[k_f]), *(g.homogen_terms[k_g]), current_mul);
         assert(current_mul.order == k);
@@ -917,6 +1018,20 @@ void term_comp(Monomial & f, std::vector<Series*> & series_vec, IndexType k, Hom
 {
     assert(f.dim == series_vec.size());
     res.reinit(series_vec[0]->dim, k);
+
+    if(f.order == 1)
+    {
+        for(IndexType var_id = 0; var_id < f.dim; var_id ++)
+        {
+            if(f.var_order(var_id) == 1)
+            {
+                Homogen homog_temp(series_vec[0]->dim, k);
+                series_vec[var_id] -> homogen_terms[k] -> scalar_mul(f.coeff, homog_temp);
+                res.destructive_add_self(homog_temp);
+                return;
+            }
+        }
+    }
 
     // initialize the vectors for series ptr and homogen order
     std::vector<IndexType> homog_order(f.order);
@@ -946,11 +1061,12 @@ void term_comp(Monomial & f, std::vector<Series*> & series_vec, IndexType k, Hom
         // sweep combinations
         const_sum_sepper_to_data(sep_vec, homog_order, k);
 
+
         // check whether to dump the term
         bool dump = false;
         for(IndexType homog_id = 0; homog_id < f.order; homog_id ++)
         {
-            if(homog_order[homog_id] >= series_ptr[homog_id] -> Kmax)            
+            if(homog_order[homog_id] >= series_ptr[homog_id] -> curr_kmax)            
             {
                 dump = true;
                 break;
@@ -1007,6 +1123,30 @@ void series_comp(Series &f, std::vector<Series*> & series_vec, IndexType k, Homo
 }
 
 
+// calculate nabla W dot f
+void series_DW_dot_f(Series & W, std::vector<Series*> & f_vec, IndexType k, Homogen & res)
+{
+    assert(W.dim == f_vec.size());
+    assert(W.dim == f_vec[0]->dim);
+
+    res.reinit(W.dim, k);
+
+    // for each var_id, add them together
+    for(IndexType var_id = 0; var_id < W.dim; var_id ++)
+    {
+        // W: k_W = 1, 2, ..., k+1, f: k_f = k + 1 - k_W
+        for(IndexType k_W = 1; k_W <= k+1; k_W++)
+        {
+            IndexType k_f = k + 1 - k_W;
+            Homogen dWdxi(W.dim, k_W - 1);
+            Homogen temp_mul(W.dim, k);
+            W.homogen_terms[k_W]->derivative(var_id, dWdxi);
+            homogen_multiplication(dWdxi, *(f_vec[var_id]->homogen_terms[k_f]), temp_mul);
+            res.destructive_add_self(temp_mul);
+        }
+    }
+}
+
 // multiply a matrix to a series vector
 void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> scalar_matrix,
         const SeriesVec & input_series, SeriesVec & output_series)
@@ -1028,4 +1168,47 @@ void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> sca
             (output_series.series_vec[row_id]) -> destructive_add_series(temp_series);
         }
     }
+}
+
+void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> scalar_matrix,
+        const HomogenVec & input_series, HomogenVec & output_series)
+{
+    assert(scalar_matrix.cols() == input_series.val_dim);
+    assert(scalar_matrix.rows() == output_series.val_dim);
+    assert(input_series.var_dim == output_series.var_dim);
+
+    output_series.reinit();
+    Homogen temp_homogen(input_series.var_dim, input_series.order);
+    // for each row
+    for(IndexType row_id = 0; row_id < scalar_matrix.rows(); row_id ++)
+    {
+        for(IndexType col_id = 0; col_id < scalar_matrix.cols(); col_id++)
+        {
+            (input_series.homog_vec[col_id]) -> copy(temp_homogen);
+            temp_homogen.scalar_mul_self(scalar_matrix(row_id, col_id));
+            (output_series.homog_vec[row_id]) -> destructive_add_self (temp_homogen);
+        }
+    }       
+}
+
+
+void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> scalar_matrix,
+        const std::vector<Homogen*> & input_series, HomogenVec & output_series)
+{
+    assert(scalar_matrix.cols() == input_series.size());
+    assert(scalar_matrix.rows() == output_series.val_dim);
+    assert(input_series[0]->dim == output_series.var_dim);
+
+    output_series.reinit();
+    Homogen temp_homogen(output_series.var_dim, input_series[0] -> order);
+    // for each row
+    for(IndexType row_id = 0; row_id < scalar_matrix.rows(); row_id ++)
+    {
+        for(IndexType col_id = 0; col_id < scalar_matrix.cols(); col_id++)
+        {
+            (input_series[col_id]) -> copy(temp_homogen);
+            temp_homogen.scalar_mul_self(scalar_matrix(row_id, col_id));
+            (output_series.homog_vec[row_id]) -> destructive_add_self (temp_homogen);
+        }
+    }   
 }

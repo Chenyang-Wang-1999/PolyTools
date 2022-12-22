@@ -1,4 +1,7 @@
 obj/*
 .vscode/*
+build/*
 *.txt
 *.exe
+__pycache__
+*.so

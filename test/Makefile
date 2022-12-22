@@ -24,3 +24,9 @@ test_order_iteration.exe:  ../obj/poly_utils.o
 
 test_matrix_mul.exe:  ../obj/polys.o ../obj/poly_utils.o
 	c++ -Wall -DDEBUG test_matrix_mul.cpp ../obj/polys.o ../obj/poly_utils.o -o test_matrix_mul.exe 
+
+test_derivative.exe:  ../obj/polys.o ../obj/poly_utils.o
+	c++ -Wall -DDEBUG test_derivative.cpp ../obj/polys.o ../obj/poly_utils.o -o test_derivative.exe 
+
+test_series_derivative_dot.exe:  ../obj/polys.o ../obj/poly_utils.o
+	c++ -Wall -DDEBUG test_series_derivative_dot.cpp ../obj/polys.o ../obj/poly_utils.o -o test_series_derivative_dot.exe 
