@@ -310,7 +310,7 @@ PolyTerm* PolyMulSweeper::next_term()
         }
 
         // check zero. If zero, destroy the ptr and return NULL
-        if(ABS_FUN(first_ptr->coeff) < EPS)
+        if(ABS_FUN(first_ptr->coeff) * pow(8.0, first_ptr->order) < EPS)
         {
             first_ptr -> ~PolyTerm();
             return NULL;
@@ -443,7 +443,7 @@ void Homogen::copy_call(void (*funcall)(PolyTerm *), Homogen & new_homog)
 void Homogen::add_term(PolyTerm * new_term)
 {
     assert(new_term != NULL);
-    if(ABS_FUN(new_term->coeff) < EPS)
+    if(ABS_FUN(new_term->coeff) * pow(8.0, new_term->order) < EPS)
     {
         new_term -> ~PolyTerm();
         return;
@@ -466,7 +466,7 @@ void Homogen::add_term(PolyTerm * new_term)
     else if (res == EQ)
     {
         term_tree -> coeff += new_term ->coeff;
-        if(ABS_FUN(term_tree->coeff) < EPS)
+        if(ABS_FUN(term_tree->coeff) * pow(8.0, term_tree->order) < EPS)
         {
             PolyTerm * junk_ptr =  pop_first_term();
             junk_ptr -> ~PolyTerm();
@@ -491,7 +491,7 @@ void Homogen::add_term(PolyTerm * new_term)
         {
             curr_ptr->next->coeff += new_term -> coeff;
             new_term -> ~PolyTerm();
-            if(ABS_FUN(curr_ptr->next->coeff) < EPS)
+            if(ABS_FUN(curr_ptr->next->coeff) * pow(8.0, curr_ptr->next->order) < EPS)
             {
                 PolyTerm* junk_ptr =  pop_next_term(curr_ptr);
                 junk_ptr -> ~PolyTerm();
@@ -545,7 +545,7 @@ void Homogen::destructive_add_self(Homogen & another)
                 new_term_ptr = another.pop_first_term();
                 LHS_ptr->coeff += new_term_ptr->coeff;
                 new_term_ptr -> ~PolyTerm();
-                if(ABS_FUN(LHS_ptr->coeff) < EPS)
+                if(ABS_FUN(LHS_ptr->coeff) * pow(8.0, LHS_ptr->order) < EPS)
                 {
                     PolyTerm * junk_ptr = pop_first_term();
                     junk_ptr -> ~PolyTerm();
@@ -596,7 +596,7 @@ void Homogen::destructive_add_self(Homogen & another)
                     new_term_ptr = another.pop_first_term();
                     LHS_ptr->next->coeff += new_term_ptr->coeff;
                     new_term_ptr->~PolyTerm();
-                    if(ABS_FUN(LHS_ptr->next->coeff) < EPS)
+                    if(ABS_FUN(LHS_ptr->next->coeff) * pow(8.0, LHS_ptr->next->order) < EPS)
                     {
                         PolyTerm * junk_ptr = pop_next_term(LHS_ptr);
                         junk_ptr -> ~PolyTerm();
@@ -623,7 +623,7 @@ void Homogen::remove_zeros()
     // remove iterms at term_tree
     while(term_tree != NULL)
     {
-        if(ABS_FUN(term_tree->coeff) < EPS )
+        if(ABS_FUN(term_tree->coeff) * pow(8.0, term_tree->order) < EPS )
         {
             PolyTerm * junk_ptr = pop_first_term();
             junk_ptr -> ~PolyTerm();
@@ -641,7 +641,7 @@ void Homogen::remove_zeros()
     PolyTerm* curr_ptr = term_tree;
     while(curr_ptr->next != NULL)
     {
-        if(ABS_FUN(curr_ptr->next->coeff)<EPS)
+        if(ABS_FUN(curr_ptr->next->coeff * pow(8.0, curr_ptr->next->order))<EPS)
         {
             PolyTerm * junk_ptr = pop_next_term(curr_ptr);
             junk_ptr -> ~PolyTerm();
@@ -720,7 +720,7 @@ void Homogen::destructive_add(Homogen & another, Homogen & new_homog)
             // Insert to new 
             if(insert_pos_ptr==NULL)
             {
-                if(ABS_FUN(new_term_ptr->coeff) > EPS)
+                if(ABS_FUN(new_term_ptr->coeff) * pow(8.0, new_term_ptr->order) > EPS)
                 {
                     new_homog.insert_at_head(new_term_ptr);
                 }
@@ -732,7 +732,7 @@ void Homogen::destructive_add(Homogen & another, Homogen & new_homog)
             }
             else
             {
-                if(ABS_FUN(new_term_ptr->coeff) > EPS)
+                if(ABS_FUN(new_term_ptr->coeff) * pow(8.0, new_term_ptr->order) > EPS)
                 {
                     new_homog.add_term_after_ptr(insert_pos_ptr, new_term_ptr);
                 }
@@ -786,7 +786,7 @@ void Homogen::derivative(IndexType var_id, Homogen & res)
     while(curr_term_ptr != NULL)
     {
         Monomial term_der = curr_term_ptr->derivative(var_id);
-        if(ABS_FUN(term_der.coeff)>EPS)
+        if(ABS_FUN(term_der.coeff) * pow(8.0, term_der.order)>EPS)
         {
             PolyTerm* new_term = new PolyTerm(term_der);
             if(res.n_terms == 0)

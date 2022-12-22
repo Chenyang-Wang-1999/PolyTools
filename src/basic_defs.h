@@ -15,7 +15,7 @@ typedef std::vector<Scalar> ScalarVec;
 typedef std::vector<IndexType> IndexVec; 
 typedef enum{GT, EQ, LT, GEQ, LEQ} CompareResult;
 #define STDOUT std::cout
-#define EPS 1e-15
+#define EPS 1e-16
 #define ABS_FUN abs
 
 #endif

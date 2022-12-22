@@ -304,10 +304,12 @@ void InvariantManifoldSolver::init_s_vec()
 // calculate Ek for "next_k"
 void InvariantManifoldSolver::calculate_curr_Ek()
 {
+    
     // Ek can be calculated element wise. For each homogen term, fetch corresponding homogen terms from F and W
     for(IndexType val_id = 0; val_id < phys_dim; val_id ++)
     {
         Homogen FW(manifold_dim, next_k), DWf(manifold_dim, next_k);
+
 
         // calculate FW
         series_comp(*(F.series_vec[val_id]), W.series_vec, next_k, FW);

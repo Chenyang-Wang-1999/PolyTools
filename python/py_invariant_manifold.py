@@ -64,7 +64,10 @@ class InvariantManifoldSolverPy:
         return self.c_solver.get_poly_val_or_var_dim(which_poly, True)
 
     def set_Kceil(self, Kceil):
-        self.c_solver.Kceil = Kceil
+        if(Kceil >= self.Kmax):
+            raise ValueError("Kceil should not exceed Kmax - 1\n")
+        else:
+            self.c_solver.Kceil = Kceil
 
     def get_curr_Kceil(self):
         return self.c_solver.Kceil
