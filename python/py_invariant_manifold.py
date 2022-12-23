@@ -5,7 +5,9 @@ Copyright © Department of Physics, Tsinghua University.  All rights reserved
 '''
 
 import py_invariant_manifold._invariant_manifold as c_invariant_manifold
+# import _invariant_manifold as c_invariant_manifold
 import sympy as sym
+import numpy as np
 
 # definitions
 POLY_F = 0
@@ -13,6 +15,8 @@ POLY_f = 1
 POLY_W = 2
 POLY_s = 3
 POLY_Ek = 4
+
+TOL = 1e-15
 
 class CIndexVec(c_invariant_manifold.CIndexVec):
     def __init__(self, vec):
@@ -90,6 +94,21 @@ class InvariantManifoldSolverPy:
     def clear_all(self):
         self.c_solver.clear_all()
 
+    def estimite_conv_range(self, start_k=2, tol=1e-3):
+        if(start_k < 2):
+            start_k = 2
+        min_range = 1e200
+        curr_k = self.get_k()
+        for k in range(start_k, min(curr_k+2, self.Kmax-1)):
+            self.calculate_err(k)
+            curr_err = self.eval(POLY_Ek, np.ones((self.manifold_dim,1)))
+            # curr_range = (tol/ np.max(np.abs(curr_err))) ** (1/k)
+            curr_range_inv = (np.max(np.abs(curr_err)) / tol) ** (1/k)
+            if(curr_range_inv > 1/min_range):
+                min_range = 1/curr_range_inv
+
+        return min_range
+
     # retrieve data
     def get_poly_data(self, which_poly, from_k):
         poly_data = []
@@ -125,3 +144,48 @@ class InvariantManifoldSolverPy:
                 curr_poly += curr_term
             polys.append(curr_poly)
         return polys
+
+class PolynomialSystemSolver(InvariantManifoldSolverPy):
+    sys_poly: list
+    sys_var_list: list
+
+    def __init__(self, sys_poly:list, sys_var_list:list, manifold_dim, Kmax:int):
+        self.sys_poly = sys_poly
+        self.sys_var_list = sys_var_list
+        super().__init__(len(sys_poly), manifold_dim, Kmax)
+
+    def set_F_around_x(self, x0):
+        # substitute list
+        subs_list = []
+        for j, var in enumerate(self.sys_var_list):
+            subs_list.append((var, var+x0[j]))
+
+        # substitute
+        for val_id in range(len(self.sys_poly)):
+            curr_poly = self.sys_poly[val_id]
+            curr_poly_around_x0 = (curr_poly.subs(subs_list)).as_poly(*(self.sys_var_list), domain='CC')
+
+            curr_poly_terms = curr_poly_around_x0.monoms()
+            curr_poly_coeff = curr_poly_around_x0.coeffs()
+            for j, curr_term in enumerate(curr_poly_terms):
+                if(not (any(curr_term))):
+                    if(np.abs(curr_poly_coeff[j]) > TOL):
+                        raise ValueError("x0 is not a fixed point")
+                    else:
+                        continue
+                
+                self.add_term_F(val_id, CIndexVec(curr_term), curr_poly_coeff[j])
+
+
+def test_polynomial_system():
+    x,y,z = sym.symbols('x,y,z')
+    var_list  = [x,y,z]
+    sys_poly = [sym.Poly(x+2*y, *var_list, domain='CC'), sym.Poly(y-2*z + 1, *var_list, domain='CC'), 
+        sym.Poly(z**2, *var_list, domain='CC')]
+    poly_solver = PolynomialSystemSolver(sys_poly, var_list, 1, 100)
+    poly_solver.set_F_around_x([2,-1+1e-16,0])
+    J = poly_solver.jacobian_by_F()
+    print(J)
+
+if __name__ == '__main__':
+    test_polynomial_system()

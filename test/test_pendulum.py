@@ -54,37 +54,42 @@ class physical_pendulum(pyIM.InvariantManifoldSolverPy):
 
 def main_test_F():
     solver = physical_pendulum(103)
-    solver.set_Kceil(101)
-    xp_matrix = np.vstack([np.linspace(-5*pi, 5*pi, 1000).reshape((1,-1)), np.zeros((1,1000))])
+    # xp_matrix = np.vstack([np.linspace(-5*pi, 5*pi, 1000).reshape((1,-1)), np.zeros((1,1000))])
     # print(xp_matrix)
-    solver.set_F(pi)
-    solver.print_poly_info(pyIM.POLY_F)
 
-    solver.set_J_and_P()
-    # for j in range(15):
-    #     solver.solve_step()
-    #     solver.print_poly_info(pyIM.POLY_W)
-    #     # solver.print_poly_info(pyIM.POLY_f)
-    #     # solver.print_poly_info(pyIM.POLY_Ek)
-    #     # curr_k = solver.get_k()
-    #     # for err_k in range(curr_k):
-    #     #     solver.calculate_err(err_k)
-    #     #     solver.print_poly_info(pyIM.POLY_Ek)
+    for j in range(1):
+        solver.clear_all()
+        solver.set_Kceil(101)
+        solver.set_F(pi)
+        solver.print_poly_info(pyIM.POLY_F)
 
-    #     input()
+        solver.set_J_and_P()
+        # for j in range(15):
+        #     solver.solve_step()
+        #     solver.print_poly_info(pyIM.POLY_W)
+        #     # solver.print_poly_info(pyIM.POLY_f)
+        #     # solver.print_poly_info(pyIM.POLY_Ek)
+        #     # curr_k = solver.get_k()
+        #     # for err_k in range(curr_k):
+        #     #     solver.calculate_err(err_k)
+        #     #     solver.print_poly_info(pyIM.POLY_Ek)
 
-    solver.solve_to_Kceil()
-    tol = 1e-3
+        #     input()
 
-    solver.calculate_err(101)
-    err_coeff = solver.eval(pyIM.POLY_Ek, np.array([[1.0]]))
-    s_range = (tol/np.max(np.abs(err_coeff))) ** (1/101)
+        solver.solve_to_Kceil()
+        tol = 1e-3
 
-    # solver.print_poly_info(pyIM.POLY_W)
-    s_matrix = np.linspace(-s_range,s_range, 1000).reshape((1,-1))
-    W_val = solver.eval(pyIM.POLY_W, s_matrix)
-    plt.plot(W_val[0,:] + pi, W_val[1,:], 'b-')
-    plt.savefig("invariant saddle.png")
+        solver.calculate_err(101)
+        err_coeff = solver.eval(pyIM.POLY_Ek, np.array([[1.0]]))
+        # s_range = (tol/np.max(np.abs(err_coeff))) ** (1/101)
+        s_range = solver.estimite_conv_range(solver.get_k(), tol)
+        print(s_range)
+
+        # solver.print_poly_info(pyIM.POLY_W)
+        s_matrix = np.linspace(-s_range,s_range, 1000).reshape((1,-1))
+        W_val = solver.eval(pyIM.POLY_W, s_matrix)
+        plt.plot(W_val[0,:] + pi, W_val[1,:], 'b-')
+        plt.savefig("invariant saddle.png")
 
 
 
