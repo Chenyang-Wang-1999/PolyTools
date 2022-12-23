@@ -30,3 +30,7 @@ test_derivative.exe:  ../obj/polys.o ../obj/poly_utils.o
 
 test_series_derivative_dot.exe:  ../obj/polys.o ../obj/poly_utils.o
 	c++ -Wall -DDEBUG test_series_derivative_dot.cpp ../obj/polys.o ../obj/poly_utils.o -o test_series_derivative_dot.exe 
+
+
+test_series_sq.exe:  ../obj/polys.o ../obj/poly_utils.o
+	c++ -Wall -DDEBUG test_series_sq.cpp ../obj/polys.o ../obj/poly_utils.o -o test_series_sq.exe 

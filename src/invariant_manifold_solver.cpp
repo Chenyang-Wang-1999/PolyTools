@@ -7,6 +7,21 @@
 #include "invariant_manifold_solver.h"
 #include <eigen3/Eigen/Eigenvalues>
 
+void InvariantManifoldSolver::clear_all()
+{
+    // clear power sequences
+    for(auto it = W_pow_seq.begin(); it != W_pow_seq.end(); it++)
+    {
+        delete (*it);
+    }
+    is_initialized = false;
+    zero_T = false;
+    resonance_tol = DEFAULT_RESONANCE_TOL;
+    F.reinit(); 
+    f.reinit();
+    W.reinit();
+}
+
 /* evaluation */
 template<typename PolyType>
 EigenMatrixX eval_poly_vec(const std::vector<PolyType*> & poly_vec, EigenMatrixX x_arr, IndexType val_dim)
@@ -64,6 +79,9 @@ void InvariantManifoldSolver::init(EigenMatrixX P, EigenMatrixX T, EigenVectorX 
         curr_f1.scalar_mul_self(lam(val_id));
         f.series_vec[val_id] -> destructive_add_homogen(curr_f1);
     }
+
+    // initialize power sequence
+    init_power_seq_from_F();
 
     // set next_k
     next_k = 2;
@@ -136,6 +154,11 @@ void InvariantManifoldSolver::init_by_F()
 // add term with coeff and order_vec to the "val_id" of F
 void InvariantManifoldSolver::add_term_F(IndexType val_id, IndexVec order_vec, Scalar coeff)
 {
+    if(is_initialized)
+    {
+        STDERR << "F must be edited before initialization. Abort\n";
+        return;
+    }
     F.series_vec[val_id] -> add_term(Monomial(coeff, order_vec));    
 }
 
@@ -186,7 +209,7 @@ bool InvariantManifoldSolver::set_data_accessor(IndexType which_val, IndexType w
         acce_series_vec = &W;
         break;
     default: 
-        STDOUT << "invalid poly index\n";
+        STDERR << "invalid poly index\n";
         assert(0);
     }
 
@@ -246,7 +269,7 @@ void InvariantManifoldSolver::print_poly_info(IndexType which_poly)
         Ek.print_info();
         break;
     default:
-        STDOUT << "invalid poly index\n";
+        STDERR << "invalid poly index\n";
         assert(0);
     }
 }
@@ -273,7 +296,7 @@ IndexType InvariantManifoldSolver::get_poly_val_or_var_dim(IndexType which_poly,
         return poly_var_or_val_dim<HomogenVec>(Ek, is_var);
         break;
     default:
-        STDOUT << "invalid poly index\n";
+        STDERR << "invalid poly index\n";
         assert(0);
     }
 }
@@ -299,6 +322,42 @@ void InvariantManifoldSolver::init_s_vec()
     }
 }
 
+void InvariantManifoldSolver::init_power_seq_from_F()
+{
+    // find maximum power for each physical variable
+    IndexVec max_phys_var_order(phys_dim);
+    for(auto it = max_phys_var_order.begin(); it != max_phys_var_order.end(); it++)
+    {
+        (*it) = 0;
+    }
+
+    for(IndexType phys_id=0; phys_id < phys_dim; phys_id++)
+    {
+        Series & F_curr = *F.series_vec[phys_id];
+        for(IndexType f_k = F_curr.curr_kmin; f_k < F_curr.curr_kmax; f_k++)
+        {
+            PolyTerm * curr_term = F_curr.homogen_terms[f_k]->term_tree;
+            while(curr_term != NULL)
+            {
+                // for each term, compare with max order
+                for(IndexType var_id = 0; var_id < phys_dim; var_id ++)
+                {
+                    if(curr_term ->var_order(var_id) >= max_phys_var_order[var_id])
+                    {
+                        max_phys_var_order[var_id] = curr_term->var_order(var_id) + 1;
+                    }
+                }
+                curr_term = curr_term -> next;
+            }
+        }
+    }
+
+    for(IndexType phys_id = 0; phys_id < phys_dim; phys_id++)
+    {
+        W_pow_seq[phys_id] = new SeriesPowerSeq(max_phys_var_order[phys_id], Kmax, W.series_vec[phys_id]);
+    }
+}
+
 /* main algorithm */
 
 // calculate Ek for "next_k"
@@ -310,10 +369,19 @@ void InvariantManifoldSolver::calculate_curr_Ek()
     {
         Homogen FW(manifold_dim, next_k), DWf(manifold_dim, next_k);
 
-
+        #ifdef DEBUG
+        STDOUT << "calculate var_id:" << val_id << '\n';
+        STDOUT << "begin calculate FW\n";
+        #endif
         // calculate FW
-        series_comp(*(F.series_vec[val_id]), W.series_vec, next_k, FW);
+        series_comp(*(F.series_vec[val_id]), W_pow_seq, next_k, FW);
         Ek.homog_vec[val_id] -> destructive_add_self(FW);
+
+        #ifdef DEBUG
+
+        STDOUT << "begin DW_dot_f\n";
+        #endif
+
         series_DW_dot_f(*(W.series_vec[val_id]), f.series_vec, next_k, DWf);
         Ek.homog_vec[val_id] -> destructive_subs_self(DWf);
     }
@@ -416,6 +484,7 @@ void InvariantManifoldSolver::update_W()
     for(IndexType val_id = 0; val_id < phys_dim; val_id ++)
     {
         W.series_vec[val_id] -> destructive_add_homogen(*(Wk.homog_vec[val_id]));
+        W_pow_seq[val_id] -> renew_term_k(next_k);
     }
 }
 
@@ -428,20 +497,29 @@ int InvariantManifoldSolver::solve_step()
         Ek.reinit(next_k);
         etak.reinit(next_k);
         xik.reinit(next_k);
+
+        //DEBUG
+        // STDOUT << "Begin calculate Ek\n";
         calculate_curr_Ek();
+        // STDOUT << "Begin calculate etak\n";
         calculate_eta_k();
+        // STDOUT << "Begin update xiN\n";
         update_xiN();
         if(!zero_T)
         {
+            // STDOUT << "Begin update TxiN\n";
             update_TxiN();
         }
+        // STDOUT << "Begin update tangent part\n";
         update_tangent_part();
+        // STDOUT << "Begin update W\n";
         update_W();
+        // STDOUT << "End\n";
         next_k ++;
     }
     else
     {
-        STDOUT << "Solver not initialized. Abort.\n";
+        STDERR << "Solver not initialized. Abort.\n";
         return 1;
     }
     return 0;
@@ -483,7 +561,7 @@ EigenMatrixX InvariantManifoldSolver::eval(IndexType which_poly, EigenMatrixX x_
         return eval_poly_vec<Homogen>(Ek.homog_vec, x_arr, Ek.val_dim);
         break;
     default: 
-        STDOUT << "invalid poly index\n";
+        STDERR << "invalid poly index\n";
         assert(0);
     }
 }

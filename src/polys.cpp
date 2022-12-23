@@ -563,7 +563,7 @@ void Homogen::destructive_add_self(Homogen & another)
                    */
                 break;
             default:
-                STDOUT << "Error: compare result is not GT, LT or EQ\n";
+                STDERR << "Error: compare result is not GT, LT or EQ\n";
                 assert(0);
             }
         } // if(is_first_term)
@@ -603,7 +603,7 @@ void Homogen::destructive_add_self(Homogen & another)
                     }
                     break;
                 default:
-                    STDOUT << "Error: compare result is not GT, LT or EQ\n";
+                    STDERR << "Error: compare result is not GT, LT or EQ\n";
                     assert(0);
                 }
             } //if(LHS_ptr -> next == NULL)else
@@ -713,7 +713,7 @@ void Homogen::destructive_add(Homogen & another, Homogen & new_homog)
                 another_term_ptr->~PolyTerm();
                 break;
             default:
-                STDOUT << "Error: compare result is not GT, LT or EQ\n";
+                STDERR << "Error: compare result is not GT, LT or EQ\n";
                 assert(0);
             }
 
@@ -983,7 +983,7 @@ void series_mul(Series & f, Series & g, IndexType k, Homogen& res)
         IndexType k_g = k - k_f;
         if(k_f >= f.Kmax)
         {
-            continue;
+            break;
         }
         if(k_g >= g.curr_kmax)
         {
@@ -1209,4 +1209,262 @@ void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> sca
             (output_series.homog_vec[row_id]) -> destructive_add_self (temp_homogen);
         }
     }   
+}
+
+
+IndexType int_log2(IndexType x)
+{
+    IndexType p = 0;
+    while((((IndexType)1)<<p) < x)
+    {
+        p++;
+    }
+    return p;
+}
+
+/* suppose we have x_1, x_2, ..., x_(k-1), and x_1^2, x_2^2, x_3^2, ..., x_(k-1)^2
+ calculate x_k^2
+ [1] À. Haro, M. Canadell, J.-L. Figueras, A. Luque, and J. M. Mondelo, The Parameterization Method for Invariant Manifolds: From Rigorous Results to Effective Computations, Vol. 195 (Springer International Publishing, Cham, 2016).
+    (k%2) == 1: 2 * sum(j=0 to (k-1)/2) x_j * x_{k-j}
+    (k%2) == 0: 2 * sum(j=0 to (k-2)/2) x_j * x_{k-j}  +  (x_{k/2})^2
+*/
+void series_renew_xqr_term(const Series & x, Series & x_sqr, IndexType next_k)
+{
+    // assert(x.homogen_terms[0]->term_tree == NULL);
+    if(next_k >= x_sqr.Kmax)
+    {
+        return;
+    }
+    Homogen new_term(x_sqr.dim, next_k);
+    series_renew_xqr_term(x, new_term, next_k);
+    x_sqr.destructive_add_homogen(new_term);
+}
+
+void series_renew_xqr_term(const Series & x, Homogen & x_sqr_k, IndexType next_k)
+{
+    
+
+    if(next_k < (x.curr_kmin * 2))
+    {
+        return;
+    }
+
+    x_sqr_k.reinit(x.dim, next_k);
+    if(next_k % 2 == 1)
+    {
+        for(IndexType j = x.curr_kmin; 2*j + 1 <= next_k; j++)
+        {
+            if(j >= x.curr_kmax)
+            {
+                break;
+            }
+            if((next_k - j) >= x.curr_kmax)
+            {
+                continue;
+            }
+
+            if((next_k - j) < x.curr_kmin)
+            {
+                break;
+            }
+            Homogen curr_homog(x.dim, next_k);
+            homogen_multiplication(*(x.homogen_terms[j]), *(x.homogen_terms[next_k - j]), curr_homog);
+            x_sqr_k.destructive_add_self(curr_homog);
+        }
+        x_sqr_k.scalar_mul_self(Scalar(2.0));
+    }
+    else
+    {
+        for(IndexType j = x.curr_kmin; 2*j+2<= next_k; j++)
+        {
+            if(j >= x.curr_kmax)
+            {
+                break;
+            }
+            if((next_k - j) >= x.curr_kmax)
+            {
+                continue;
+            }
+
+            if((next_k - j) < x.curr_kmin)
+            {
+                break;
+            }
+            Homogen curr_homog(x.dim, next_k);
+            homogen_multiplication(*(x.homogen_terms[j]), *(x.homogen_terms[next_k - j]), curr_homog);
+            x_sqr_k.destructive_add_self(curr_homog);
+        }
+        x_sqr_k.scalar_mul_self(Scalar(2.0));
+
+        // x(k/2)^2 term
+        Homogen x_khalf_sqr(x.dim, next_k);
+        homogen_multiplication(*(x.homogen_terms[next_k/2]), *(x.homogen_terms[next_k/2]), x_khalf_sqr);
+        x_sqr_k.destructive_add_self(x_khalf_sqr);
+    }
+}
+
+// renew term k 
+void SeriesPowerSeq::renew_term_k(IndexType k)
+{
+    if(k<= curr_k)
+    {
+        STDERR << "Warning (renew_term_k): k:"<<k<<" is smaller than current k:"<<curr_k<<". Nothing done.\n";
+        return;
+    }
+    IndexType base_min_k = series_vec[0]->curr_kmin;
+    
+    for(IndexType pow_id = 1; pow_id < val_dim; pow_id++)
+    {
+        IndexType curr_min_k = (base_min_k << pow_id);
+        if(curr_min_k > k)
+        {
+            break;
+        }
+        series_renew_xqr_term(*(series_vec[pow_id-1]), *(series_vec[pow_id]), k);
+
+    }
+    curr_k = k;
+}
+
+
+void SeriesPowerSeq::append_pow_ptr(IndexType order, std::vector<Series*> & series_ptr)
+{
+    IndexType seq_id = 0; // order[seq_id] = 2^{seq_id}
+    while(order)
+    {
+        if(order % 2)
+        {
+            if(seq_id >= val_dim)
+            {
+                STDERR << "Error (append_pow_ptr) order exceed the max order of power sequence\n";
+                STDERR << "seq_id: " << seq_id << ", max pow: " << val_dim << '\n';
+                assert(0);
+            }
+            series_ptr.push_back(series_vec[seq_id]);
+        }
+        seq_id ++;
+        order /= 2;
+    }
+}
+
+/* composition with the help of series power sequence */
+void term_comp(Monomial & f, std::vector<SeriesPowerSeq*> & series_seq_vec, IndexType k, Homogen& res)
+{
+    assert(f.dim == series_seq_vec.size());
+    res.reinit(series_seq_vec[0]->var_dim, k);
+
+    // generate series ptr by the power sequences
+    std::vector<Series*> series_ptr;
+    series_ptr.clear();
+    for(IndexType var_id = 0; var_id < f.dim; var_id ++)
+    {
+        IndexType curr_order = f.var_order(var_id);
+        series_seq_vec[var_id] -> append_pow_ptr(curr_order, series_ptr);
+    }
+    
+    if(series_ptr.size() == 0)
+    {
+        return;
+    }
+    else if(series_ptr.size() == 1)
+    {
+        // only one term
+        series_ptr[0] -> homogen_terms[k] -> copy(res);
+        res.scalar_mul_self(f.coeff);
+        return;
+    }
+
+    // initialize the vectors for series ptr and homogen order
+    std::vector<IndexType> homog_order(series_ptr.size());
+
+    // set k max and k min
+    IndexVec k_min_list(series_ptr.size()), k_max_list(series_ptr.size());
+    for(IndexType series_id = 0; series_id < series_ptr.size(); series_id ++)
+    {
+        if(series_ptr[series_id] -> curr_kmax <= series_ptr[series_id] -> curr_kmin)
+        {
+            return;
+        }
+        else
+        {
+            k_min_list[series_id] = series_ptr[series_id] -> curr_kmin;
+            k_max_list[series_id] = series_ptr[series_id] -> curr_kmax;
+        }
+    }
+
+    std::vector<Homogen*> homog_ptr(series_ptr.size());
+
+    // sweep all combination with total sum k
+    IndexVec sep_vec(series_ptr.size() + 1);
+    bool init_successful = boards_left_most(sep_vec, 0, k_min_list, k_max_list, k);
+    if(! init_successful)
+    {
+        return;
+    }
+
+    Homogen homog_temp(series_seq_vec[0]->var_dim, k);
+    do
+    {
+        // sweep combinations
+        const_sum_boards_to_data(sep_vec, homog_order);
+
+
+        // check whether to dump the term
+        bool dump = false;
+        for(IndexType homog_id = 0; homog_id < series_ptr.size(); homog_id ++)
+        {
+            if(homog_order[homog_id] >= series_ptr[homog_id] -> curr_kmax)            
+            {
+                dump = true;
+                break;
+            }
+            homog_ptr[homog_id] = series_ptr[homog_id] -> homogen_terms[homog_order[homog_id]];
+
+            if(homog_ptr[homog_id]->term_tree == NULL)
+            {
+                // empty term
+                dump = true;
+                break;
+            }
+        }
+
+
+        // if not dump, sum and add to the result
+        if(! dump)
+        {
+            homogen_mul_seq(homog_ptr, k, homog_temp);
+            assert(homog_temp.order == k);
+
+          
+            res.destructive_add_self(homog_temp);
+        }
+    }while(! const_sum_next(sep_vec, k_min_list, k_max_list));
+
+    res.scalar_mul_self(f.coeff);
+}
+
+/* series composition with the help of power sequences */
+void series_comp(Series &f, std::vector<SeriesPowerSeq*> & series_seq_vec, IndexType k, Homogen& res)
+{
+    assert(f.dim == series_seq_vec.size());
+    res.reinit(series_seq_vec[0]->var_dim, k);
+
+    if(f.curr_kmin >= f.curr_kmax)
+    {
+        // f empty
+        return;
+    }
+
+    Homogen curr_result(series_seq_vec[0]->var_dim, k);
+    for(IndexType f_k = f.curr_kmin; f_k < f.curr_kmax; f_k ++)
+    {
+        Homogen & curr_homogen = *(f.homogen_terms[f_k]);
+        PolyTerm * curr_term = curr_homogen.term_tree;
+        while(curr_term != NULL)
+        {
+            term_comp(*curr_term, series_seq_vec, k, curr_result);
+            res.destructive_add_self(curr_result);
+            curr_term = curr_term -> next;
+        }
+    }
 }

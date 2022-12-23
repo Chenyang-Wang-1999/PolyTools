@@ -31,7 +31,9 @@ public:
         xik(manifold_dim, phys_dim, Kmax), s_vec(manifold_dim, manifold_dim, 1) {
             init_s_vec();
             Kceil = Kmax-1;
+            W_pow_seq.resize(phys_dim);
         }
+
     IndexType Kmax;
     IndexType Kceil;
     IndexType phys_dim, manifold_dim;
@@ -40,12 +42,25 @@ public:
     SeriesVec F;    // vector field
     double resonance_tol = DEFAULT_RESONANCE_TOL; // tolerance for cross resonance
 
-    // initialization
+    /* initialization */
+
+    // clear all data and reset initialization
+    void clear_all();
+    // initialize with T
     void init(EigenMatrixX P, EigenMatrixX T, EigenVectorX lam);
+    // initialize without T
     void init_without_T(EigenMatrixX P, EigenVectorX lam)
     {
         init(P, EigenMatrixX::Zero(manifold_dim, phys_dim - manifold_dim), lam);
         zero_T = true;
+    }
+
+    ~InvariantManifoldSolver()
+    {
+        for(auto it = W_pow_seq.begin(); it != W_pow_seq.end(); it++)
+        {
+            delete (*it);
+        }
     }
 
     // void init_by_F();
@@ -95,6 +110,7 @@ public:
     }
 
 private:
+    std::vector<SeriesPowerSeq*> W_pow_seq;
     SeriesVec f, W;
     IndexType next_k;
     HomogenVec Ek;
@@ -108,6 +124,9 @@ private:
 
     // initialize s vector
     void init_s_vec();
+
+    // initialize power sequence for current F
+    void init_power_seq_from_F();
 
     // calculation for Ek
     void calculate_curr_Ek();

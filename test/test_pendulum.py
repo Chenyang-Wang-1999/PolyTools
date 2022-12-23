@@ -53,8 +53,8 @@ class physical_pendulum(pyIM.InvariantManifoldSolverPy):
 
 
 def main_test_F():
-    solver = physical_pendulum(20)
-    solver.set_Kceil(15)
+    solver = physical_pendulum(103)
+    solver.set_Kceil(101)
     xp_matrix = np.vstack([np.linspace(-5*pi, 5*pi, 1000).reshape((1,-1)), np.zeros((1,1000))])
     # print(xp_matrix)
     solver.set_F(pi)
@@ -74,23 +74,19 @@ def main_test_F():
     #     input()
 
     solver.solve_to_Kceil()
+    tol = 1e-3
 
-    solver.print_poly_info(pyIM.POLY_W)
-    s_matrix = np.linspace(-5,5, 1000).reshape((1,-1))
+    solver.calculate_err(101)
+    err_coeff = solver.eval(pyIM.POLY_Ek, np.array([[1.0]]))
+    s_range = (tol/np.max(np.abs(err_coeff))) ** (1/101)
+
+    # solver.print_poly_info(pyIM.POLY_W)
+    s_matrix = np.linspace(-s_range,s_range, 1000).reshape((1,-1))
     W_val = solver.eval(pyIM.POLY_W, s_matrix)
     plt.plot(W_val[0,:] + pi, W_val[1,:], 'b-')
     plt.savefig("invariant saddle.png")
 
-    max_err = 0.0
-    for k in range(solver.get_k() + 1):
-        solver.calculate_err(k)
-        solver.print_poly_info(pyIM.POLY_Ek)
-        err_val = solver.eval(pyIM.POLY_Ek, s_matrix)
-        curr_err = np.max(np.abs(err_val))
-        if(curr_err > max_err):
-            max_err = curr_err
 
-    print(max_err)
 
 
 

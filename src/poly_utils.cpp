@@ -77,7 +77,7 @@ bool boards_left_most(IndexVec & boards, IndexType n_freeze, IndexVec & ball_min
     {
         if(n_freeze)
         {
-            STDOUT << "Warning: resize boards\n";
+            STDERR << "Warning: resize boards\n";
             n_freeze = 0;
         }
         boards.clear();

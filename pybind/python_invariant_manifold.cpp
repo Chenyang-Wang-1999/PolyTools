@@ -39,6 +39,7 @@ PYBIND11_MODULE(_invariant_manifold, m)
         .def("eval", &InvariantManifoldSolver::eval)
         .def("get_k", &InvariantManifoldSolver::get_k)
         .def("calculate_err", &InvariantManifoldSolver::calculate_err)
+        .def("clear_all", &InvariantManifoldSolver::clear_all)
         .def("init_with_T", &InvariantManifoldSolver::init);
     // py::class_<Monomial>(m, "_Monomial")
     //     .def(py::init<Scalar, IndexVec>())

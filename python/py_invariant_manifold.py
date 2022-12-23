@@ -87,6 +87,9 @@ class InvariantManifoldSolverPy:
     def calculate_err(self, err_k):
         self.c_solver.calculate_err(err_k)
 
+    def clear_all(self):
+        self.c_solver.clear_all()
+
     # retrieve data
     def get_poly_data(self, which_poly, from_k):
         poly_data = []

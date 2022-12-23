@@ -313,6 +313,8 @@ private:
 };
 
 /* Homogen arithmatics */
+
+// h = f * g
 void homogen_multiplication(const Homogen & f, const Homogen & g, Homogen & h);
 void homogen_mul_seq(std::vector<Homogen*> & f_seq, IndexType total_order, Homogen & res);
 
@@ -505,5 +507,58 @@ void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> sca
 
 void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> scalar_matrix,
         const std::vector<Homogen*> & input_series, HomogenVec & output_series);
+
+// calculate the integer log2 of x
+IndexType int_log2(IndexType x);
+
+/* suppose we have x_1, x_2, ..., x_(k-1), and x_1^2, x_2^2, x_3^2, ..., x_(k-1)^2
+ calculate x_k^2*/
+void series_renew_xqr_term(const Series & x, Series & x_sqr, IndexType next_k);
+void series_renew_xqr_term(const Series & x, Homogen & x_sqr_k, IndexType next_k);
+
+/* power seq: terms for w^1, w^2, w^4, w^8, ..., where w^1 is a constant pointer
+    pointing to a certain series
+*/ 
+class SeriesPowerSeq: public SeriesVec
+{
+public:
+    IndexType curr_k;  // current k for all ws
+    
+    SeriesPowerSeq(IndexType max_order, IndexType Kmax, Series * series_w):
+        SeriesVec(series_w->dim, int_log2(max_order), Kmax)
+    {
+        curr_k = 1;
+        assert(series_w->homogen_terms[0]->term_tree == NULL);
+        series_vec[0] -> ~Series();
+        series_vec[0] = series_w;
+    }
+    ~SeriesPowerSeq()
+    {
+        for(auto it = series_vec.begin() + 1; it != series_vec.end(); it ++)
+        {
+            (*it) -> ~Series();
+        }
+        series_vec.clear();
+    }
+
+    void reinit()
+    {
+        for(auto it = series_vec.begin() + 1; it != series_vec.end(); it ++)
+        {
+            (*it) -> reinit();
+        }
+    }
+
+    void renew_term_k(IndexType k);
+
+    /* for w^{order} = w^{d1}*w^{d2}*..., append the pointers 
+       &w^{d1}, &w^{d2},... to the series_ptr */
+    void append_pow_ptr(IndexType order, std::vector<Series*> & series_ptr);
+
+};
+
+/* composition with the help of series power sequence */
+void term_comp(Monomial & f, std::vector<SeriesPowerSeq*> & series_seq_vec, IndexType k, Homogen& res);
+void series_comp(Series &f, std::vector<SeriesPowerSeq*> & series_seq_vec, IndexType k, Homogen& res);
 
 #endif
