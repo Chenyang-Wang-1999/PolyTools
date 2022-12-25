@@ -8,6 +8,7 @@ import py_invariant_manifold._invariant_manifold as c_invariant_manifold
 # import _invariant_manifold as c_invariant_manifold
 import sympy as sym
 import numpy as np
+import csv
 
 # definitions
 POLY_F = 0
@@ -16,7 +17,8 @@ POLY_W = 2
 POLY_s = 3
 POLY_Ek = 4
 
-TOL = 1e-15
+
+TOL = 1e-12
 
 class CIndexVec(c_invariant_manifold.CIndexVec):
     def __init__(self, vec):
@@ -31,11 +33,16 @@ class InvariantManifoldSolverPy:
     phys_dim:int 
     manifold_dim:int 
     Kmax:int
+
+    curr_sym_poly:list
+    curr_sym_Dpoly:list
     def __init__(self, phys_dim:int, manifold_dim:int, Kmax:int):
         self.c_solver = c_invariant_manifold._CInvariantManifoldSolver(phys_dim, manifold_dim, Kmax)
         self.phys_dim = self.c_solver.phys_dim
         self.manifold_dim = self.c_solver.manifold_dim
         self.Kmax = self.c_solver.Kmax
+        self.curr_sym_poly = [[]] * 3
+        self.curr_sym_Dpoly = [[]] * 3
 
     def init_without_T(self, P, lam):
         self.c_solver.init_without_T(P, lam)
@@ -94,7 +101,7 @@ class InvariantManifoldSolverPy:
     def clear_all(self):
         self.c_solver.clear_all()
 
-    def estimite_conv_range(self, start_k=2, tol=1e-3):
+    def estimate_conv_range(self, start_k=2, tol=1e-3):
         if(start_k < 2):
             start_k = 2
         min_range = 1e200
@@ -108,6 +115,13 @@ class InvariantManifoldSolverPy:
                 min_range = 1/curr_range_inv
 
         return min_range
+
+    # overriding functions
+    def tangent_vector(self, P):
+        pass
+
+    def jacobian(self, P):
+        pass
 
     # retrieve data
     def get_poly_data(self, which_poly, from_k):
@@ -130,20 +144,149 @@ class InvariantManifoldSolverPy:
 
         return poly_data
 
-    def get_poly_sympy(self, which_poly, vars, from_k=1):
+    def get_poly_sympy(self, which_poly, poly_vars, from_k=1):
         poly_data = self.get_poly_data(which_poly, from_k)
         var_dim = self.get_poly_var_dim(which_poly)
         polys = []
         for j in range(len(poly_data)):
-            curr_poly = sym.Poly(0.0, vars[0])
-            for term in poly_data[j]:
+            curr_poly = sym.Poly(0.0, poly_vars[0])
+            for k, term in enumerate(poly_data[j]):
+                print(k/len(poly_data[j]) * 100, '%')
                 curr_expr = term[0]
                 for var_id in range(var_dim):
-                    curr_expr *= (vars[var_id] ** term[1][var_id])
+                    curr_expr *= (poly_vars[var_id] ** term[1][var_id])
                 curr_term = sym.Poly(curr_expr)
                 curr_poly += curr_term
             polys.append(curr_poly)
         return polys
+
+    def update_poly_sympy(self, which_poly, poly_vars, from_k=1):
+        new_poly = self.get_poly_sympy(which_poly, poly_vars, from_k)
+        self.curr_sym_poly[which_poly] = new_poly
+        # if(poly_id < len(self.curr_sym_poly)):
+        #     self.curr_sym_poly[poly_id] = new_poly
+        # else:
+        #     self.curr_sym_poly.append(new_poly)
+
+    def update_Dpoly_sympy(self, which_poly, poly_vars, from_k=1):
+        if(len(self.curr_sym_poly[which_poly]) == 0):
+            self.update_poly_sympy(which_poly, poly_vars, from_k)
+        new_poly = self.curr_sym_poly[which_poly]
+        new_Dpoly =  []
+        for j in range(self.get_poly_val_dim(which_poly)):
+            new_Dpoly_dim =[]
+            for k in range(self.get_poly_var_dim(which_poly)):
+                new_Dpoly_dim.append(new_poly[j].diff(k))
+            new_Dpoly.append(new_Dpoly_dim)
+
+        self.curr_sym_Dpoly[which_poly] = new_poly
+        # if(poly_id < len(self.curr_sym_poly)):
+        #     self.curr_sym_poly[poly_id] = new_Dpoly
+        # else:
+        #     self.curr_sym_poly.append(new_Dpoly)
+
+    def sympy_eval(self, which_poly, x_arr):
+        # evaluate the polynomial by sympy
+        val_dim = self.get_poly_val_dim(which_poly)
+        var_dim = self.get_poly_var_dim(which_poly)
+
+        poly_vars = sym.symbols('x_{0:%d}'%(var_dim))
+        if(len(self.curr_sym_poly[which_poly]) == 0):
+            self.update_poly_sympy(which_poly, poly_vars, 1)
+
+        vals = np.zeros((val_dim, x_arr.shape[1]), dtype=complex)
+        for j in range(x_arr.shape[1]):
+            for k in range(val_dim):
+                vals[k,j] = self.curr_sym_poly[which_poly][k].eval(list(x_arr[:,j]))
+        return vals
+        # sym_poly = self.get_poly_sympy(which_poly, poly_vars, 1)
+
+    def load_F_from_file(self, val_id:int, fname:str):
+        data_fp = open(fname, "r")
+        reader = csv.reader(data_fp)
+
+        for line in reader:
+            if(len(line) != self.phys_dim + 1):
+                data_fp.close()
+                self.clear_all()
+                raise ValueError("data type do not match phys dim")
+
+            coeff = complex(line[0])
+            orders  = CIndexVec([0]*(len(line) - 1))
+            for j in range(1, len(line)):
+                orders[j-1] = int(line[j])
+
+            self.add_term_F(val_id, orders, coeff)
+
+        data_fp.close()
+
+    def calculate_err_angle(self, s_arr):
+        # calculate the angle between the tangent vector and the manifold
+
+        poly_vars = sym.symbols('x_{0:%d}'%(self.manifold_dim))
+        # get W and DW
+        if(len(self.curr_sym_poly[POLY_W]) == 0):
+            self.update_poly_sympy(POLY_W, poly_vars, 1)
+        if(len(self.curr_sym_Dpoly[POLY_W]) == 0):
+            self.update_Dpoly_sympy(POLY_W, poly_vars, 1)
+
+        err_vec = np.zeros((s_arr.shape[1],))
+        for j in range(s_arr.shape[1]):
+            curr_s = list(s_arr[:,j])
+            curr_W = np.zeros((self.phys_dim,), dype = complex)
+            curr_DW = np.zeros((self.phys_dim, self.manifold_dim), dtype=complex)
+            for k in range(self.phys_dim):
+                curr_W[k] = self.curr_sym_poly[POLY_W][k].eval(curr_s)
+                for m in range(self.manifold_dim):
+                    curr_DW[k,m] = self.curr_sym_poly[POLY_W][k][m].eval(curr_s)
+
+            # get tangent vector
+            tan_vec = self.tangent_vector(curr_W)
+            tan_vec /= LA.norm(tan_vec)
+
+            # normalize W
+            for m in range(self.manifold_dim):
+                curr_DW[:,m] /= LA.norm(curr_DW[:,m])
+
+            # solve least square
+            res = LA.lstsq(curr_DW, tan_vec)[1]
+            if(len(res)==0):
+                err_vec[j] = 0
+            else:
+                err_vec[j] = res[0]
+        return err_vec
+
+    def move_to_converge_range(self, s_points, tol = 1e-12, tol_scale = 1e-4):
+        new_s_points = np.zeros_like(s_points, dype=complex)
+        for j in range(s_points.shape[1]):
+            print(j)
+            curr_s = s_points[:,j].reshape((-1,1))
+            curr_err = self.calculate_err_angle(curr_s)
+
+            scale_max = 1.0
+            scale_min = 1.0
+            if(curr_err > tol):
+                while(curr_err > tol):
+                    scale_min /= 2
+                    curr_err = self.calculate_err_angle(curr_s*scale_min)[0]
+            else:
+                while(curr_err <= tol):
+                    scale_max *= 2
+                    curr_err = self.calculate_err_angle(curr_s*scale_max)[0]
+            
+            # bisect to converge
+            curr_scale = np.sqrt(scale_max * scale_min)
+            while(np.abs(scale_max/scale_min - 1)> tol_scale):
+                curr_err = self.calculate_err_angle(curr_s * curr_scale)[0]
+                print("curr err:", curr_err)
+                print("curr scale:", curr_scale)
+                if(curr_err > tol):
+                    scale_max = curr_scale
+                else:
+                    scale_min = curr_scale
+            
+            new_s_points[:,j] = s_points[:,j] * curr_scale
+        return new_s_points
 
 class PolynomialSystemSolver(InvariantManifoldSolverPy):
     sys_poly: list
@@ -170,12 +313,24 @@ class PolynomialSystemSolver(InvariantManifoldSolverPy):
             for j, curr_term in enumerate(curr_poly_terms):
                 if(not (any(curr_term))):
                     if(np.abs(curr_poly_coeff[j]) > TOL):
+                        print(np.abs(curr_poly_coeff[j]))
                         raise ValueError("x0 is not a fixed point")
                     else:
                         continue
                 
                 self.add_term_F(val_id, CIndexVec(curr_term), curr_poly_coeff[j])
 
+# print_poly_data, name = fname + "%d.csv"
+def print_poly_data(poly_data, fname:str):
+    for j in range(len(poly_data)):
+        fp = open(fname + "%d.csv"%(j), "w")
+        writer = csv.writer(fp)
+        for item in poly_data[j]:
+            curr_row = [item[0]]
+            for p in item[1]:
+                curr_row.append(p)
+            writer.writerow(curr_row)
+        fp.close()
 
 def test_polynomial_system():
     x,y,z = sym.symbols('x,y,z')

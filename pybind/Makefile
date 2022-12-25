@@ -10,4 +10,3 @@ all: _$(PROJNAME)$(SUFFIX)
 
 _$(PROJNAME)$(SUFFIX): ../obj/*.o
 	c++ -O2 -Wall -shared  -fPIC $(INCLUDE) python_$(PROJNAME).cpp ../obj/*.o -o _$(PROJNAME)$(SUFFIX)
-	cp _$(PROJNAME)$(SUFFIX) ../python
