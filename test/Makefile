@@ -1,6 +1,6 @@
 
-test_homogen_basics.exe:  ../obj/polys.o
-	c++ -Wall test_homogen_basics.cpp ../obj/polys.o -o test_homogen_basics.exe 
+test_homogen_basics.exe:  ../obj/*.o
+	c++ -Wall test_homogen_basics.cpp ../obj/*.o -o test_homogen_basics.exe 
 
 
 test_poly_mul_sweeper.exe:  ../obj/polys.o
@@ -10,8 +10,8 @@ test_poly_mul_sweeper.exe:  ../obj/polys.o
 test_remove_zeros.exe:  ../obj/polys.o
 	c++ -Wall test_remove_zeros.cpp ../obj/polys.o -o test_remove_zeros.exe 
 
-test_eval_and_mul.exe:  ../obj/polys.o
-	c++ -Wall -DDEBUG test_eval_and_mul.cpp ../obj/polys.o -o test_eval_and_mul.exe 
+test_eval_and_mul.exe:  ../obj/*.o
+	c++ -Wall -DDEBUG test_eval_and_mul.cpp ../obj/*.o -o test_eval_and_mul.exe 
 
 test_mul_seq.exe:  ../obj/polys.o
 	c++ -Wall -DDEBUG test_mul_seq.cpp ../obj/polys.o -o test_mul_seq.exe 
@@ -34,3 +34,7 @@ test_series_derivative_dot.exe:  ../obj/polys.o ../obj/poly_utils.o
 
 test_series_sq.exe:  ../obj/polys.o ../obj/poly_utils.o
 	c++ -Wall -DDEBUG test_series_sq.cpp ../obj/polys.o ../obj/poly_utils.o -o test_series_sq.exe 
+
+
+test_series_to_linked_list.exe:  ../obj/polys.o ../obj/poly_utils.o
+	c++ -Wall -DDEBUG test_series_to_linked_list.cpp ../obj/polys.o ../obj/poly_utils.o -o test_series_to_linked_list.exe 

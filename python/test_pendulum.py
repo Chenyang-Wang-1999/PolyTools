@@ -79,15 +79,21 @@ def main_test_F():
         solver.solve_to_Kceil()
         tol = 1e-3
 
-        solver.calculate_err(101)
-        err_coeff = solver.eval(pyIM.POLY_Ek, np.array([[1.0]]))
-        # s_range = (tol/np.max(np.abs(err_coeff))) ** (1/101)
-        s_range = solver.estimite_conv_range(solver.get_k(), tol)
-        print(s_range)
+        # solver.calculate_err(101)
+        # err_coeff = solver.eval(pyIM.POLY_Ek, np.array([[1.0]]))
+        # # s_range = (tol/np.max(np.abs(err_coeff))) ** (1/101)
+        s_range = solver.estimate_conv_range(solver.get_k(), tol)
+        # print(s_range)
 
         # solver.print_poly_info(pyIM.POLY_W)
         s_matrix = np.linspace(-s_range,s_range, 1000).reshape((1,-1))
-        W_val = solver.eval(pyIM.POLY_W, s_matrix)
+
+        W_poly = solver.get_poly(pyIM.POLY_W)
+        W_val = np.zeros((2, 1000))
+        diff_order = pyIM.CIndexVec([0])
+        W_val[0,:] = W_poly[0].batch_eval(diff_order, s_matrix)
+        W_val[1,:] = W_poly[1].batch_eval(diff_order, s_matrix)
+        # W_val = solver.eval(pyIM.POLY_W, s_matrix)
         plt.plot(W_val[0,:] + pi, W_val[1,:], 'b-')
         plt.savefig("invariant saddle.png")
 

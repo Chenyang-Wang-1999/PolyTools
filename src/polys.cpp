@@ -47,15 +47,17 @@ Monomial Monomial::operator*(Monomial monomial_another)
 CompareResult Monomial::comp(Monomial monomial_another)
 {
     assert(dim == monomial_another.dim);
-    // 1. compare the total order. If not equal, return.
-    if(order > monomial_another.order)
-    {
-        return GT;
-    }
-    else if(order < monomial_another.order)
-    {
-        return LT;
-    }
+    // // 1. compare the total order. If not equal, return.
+    // if(order > monomial_another.order)
+    // {
+    //     return GT;
+    // }
+    // else if(order < monomial_another.order)
+    // {
+    //     return LT;
+    // }
+
+    // directly compare by dictionary order
 
     // 2. compare variable order by dictionary order.
     for(IndexType var_id =0; var_id < dim; var_id++)
@@ -371,13 +373,13 @@ bool PolyMulSweeper::is_finished()
     }
 }
 
-/* Homogen */
-Homogen::Homogen(std::vector<Monomial> & monomial_vec)
+
+/* PolyLinkedList */
+PolyLinkedList::PolyLinkedList(std::vector<Monomial> & monomial_vec)
 {
     // initialize
     n_terms = monomial_vec.size();
     dim = monomial_vec[0].dim;
-    order = monomial_vec[0].order;
     term_tree = new PolyTerm(monomial_vec[0]);
     term_tree->next = NULL;
     PolyTerm * curr_ptr = term_tree;
@@ -391,9 +393,9 @@ Homogen::Homogen(std::vector<Monomial> & monomial_vec)
     }
 }
 
-void Homogen::copy(Homogen & new_homog)
+void PolyLinkedList::copy(PolyLinkedList & new_homog)
 {
-    new_homog.reinit(dim, order);
+    new_homog.reinit(dim);
 
     PolyTerm * new_term_ptr = NULL;
     PolyTerm * curr_term_ptr = term_tree;
@@ -415,9 +417,9 @@ void Homogen::copy(Homogen & new_homog)
     }
 }
 
-void Homogen::copy_call(void (*funcall)(PolyTerm *), Homogen & new_homog)
+void PolyLinkedList::copy_call(void (*funcall)(PolyTerm *), PolyLinkedList & new_homog)
 {
-    new_homog.reinit(dim, order);
+    new_homog.reinit(dim);
 
     PolyTerm * new_term_ptr = NULL;
     PolyTerm * curr_term_ptr = term_tree;
@@ -440,7 +442,7 @@ void Homogen::copy_call(void (*funcall)(PolyTerm *), Homogen & new_homog)
 }
 
 // add term to correct position (increasing dictionary order)
-void Homogen::add_term(PolyTerm * new_term)
+void PolyLinkedList::add_term(PolyTerm * new_term)
 {
     assert(new_term != NULL);
     if(ABS_FUN(new_term->coeff) * pow(8.0, new_term->order) < EPS)
@@ -510,10 +512,9 @@ void Homogen::add_term(PolyTerm * new_term)
 }
 
 // add another to this, but the terms of another will be destroyed
-void Homogen::destructive_add_self(Homogen & another)
+void PolyLinkedList::destructive_add_self(PolyLinkedList & another)
 {
     assert(dim == another.dim);
-    assert(order == another.order);
 
     PolyTerm * LHS_ptr=term_tree;
     bool is_first_term = true;// whether LHS_ptr points to the first term
@@ -613,7 +614,7 @@ void Homogen::destructive_add_self(Homogen & another)
 }
 
 // remove terms less then EPS
-void Homogen::remove_zeros()
+void PolyLinkedList::remove_zeros()
 {
     if(term_tree == NULL)
     {
@@ -655,12 +656,11 @@ void Homogen::remove_zeros()
 
 // add up to the third object, and all the terms of self and the other operand
 // will all be destroyed.
-void Homogen::destructive_add(Homogen & another, Homogen & new_homog)
+void PolyLinkedList::destructive_add(PolyLinkedList & another, PolyLinkedList & new_homog)
 {
     assert(dim == another.dim);
-    assert(order == another.order);
     // Compare the pointer at the list head, and append one by one to the new Homogen
-    new_homog.reinit(dim, order);
+    new_homog.reinit(dim);
 
     PolyTerm * new_term_ptr=NULL, *insert_pos_ptr=NULL;
     PolyTerm * another_term_ptr = NULL;
@@ -750,17 +750,16 @@ void Homogen::destructive_add(Homogen & another, Homogen & new_homog)
 }
 
 // add to self without destroy the other one
-void Homogen::add_self(Homogen & another)
+void PolyLinkedList::add_self(PolyLinkedList & another)
 {
     // copy another, and destructively add to self
-    Homogen another_copy(dim, order);
+    PolyLinkedList another_copy(dim);
     another.copy(another_copy);
     destructive_add_self(another_copy);
-    another_copy.~Homogen();
 }
 
 // add to another Homogen
-void Homogen::add(Homogen & another, Homogen & result_copy)
+void PolyLinkedList::add(PolyLinkedList & another, PolyLinkedList & result_copy)
 {
     // copy self
     copy(result_copy);
@@ -768,6 +767,131 @@ void Homogen::add(Homogen & another, Homogen & result_copy)
 }
 
 
+
+
+// // eval
+// Scalar PolyLinkedList::eval(const ScalarVec & x)
+// {
+//     // evaluation of the homogen
+//     ScalarVec x_and_res(dim+1);
+    
+//     // initialize
+//     for(IndexType var_id = 0; var_id < dim; var_id++)
+//     {
+//         x_and_res[var_id] = x[var_id];
+//     }
+//     x_and_res[dim] = Scalar(0.0);
+
+//     // evaluate
+//     traverse_from_node<PolyTerm, ScalarVec>(term_tree, polyterm_accumulate_eval, &x_and_res);
+//     return x_and_res[dim];
+// }
+
+
+Scalar PolyLinkedList::eval_diff_variable(const IndexVec & diff_order, const ScalarVec & x, 
+                PolyTerm* start_ptr, PolyTerm* end_ptr, IndexType var_id)
+{
+    PolyTerm* curr_ptr = start_ptr;
+    // move to the first ptr that the order >= diff order
+    while(curr_ptr != end_ptr)
+    {
+        if(curr_ptr -> var_order(var_id) >= diff_order[var_id])
+        {
+            break;
+        }
+        curr_ptr = curr_ptr -> next;
+    }
+    Scalar val = Scalar(0.0);
+
+    // all order is less then diff order
+    if(curr_ptr == end_ptr)
+    {
+        return val;
+    }
+
+    IndexType curr_order = (curr_ptr->var_order(var_id) - diff_order[var_id]);
+    Scalar curr_val = 1.0;
+    if(curr_order > 0)
+    {
+        curr_val = pow(x[var_id], curr_order);
+    }
+    else
+    {
+        curr_val = 1.0;
+    }
+
+    // if var_id == dim - 1, collect the values from start to end.
+    if(var_id == dim - 1)
+    {
+        while(curr_ptr != end_ptr)
+        {
+            // collect values
+            Scalar curr_coeff = curr_ptr->coeff;
+            // derivative part: n * (n - 1) * ... * (n - m + 1)
+            for(IndexType diff_coeff = curr_ptr-> var_order(var_id); 
+                diff_coeff > curr_order; diff_coeff--)
+                {
+                    curr_coeff *= diff_coeff;
+                }
+            
+            val += curr_coeff * curr_val;
+
+            curr_ptr = curr_ptr->next;
+            if(curr_ptr != end_ptr)
+            {
+                IndexType next_order = (curr_ptr -> var_order(var_id)) - diff_order[var_id];
+                curr_val *= pow(x[var_id], (next_order-curr_order));
+                curr_order = next_order;
+            }
+        }
+    }
+    // else, calculate by a similar way except that the coefficients are calculated recursively by the other variables
+    else
+    {
+        PolyTerm * next_start_term = curr_ptr;
+        Scalar coeff = 0.0;
+        while(curr_ptr != end_ptr)
+        {
+            if((curr_ptr->var_order(var_id) - diff_order[var_id]) == curr_order)
+            {
+                // move to next
+                curr_ptr = curr_ptr -> next;
+            }
+            else
+            {
+                // calculate coefficients
+                coeff = eval_diff_variable(diff_order, x, next_start_term, curr_ptr, var_id + 1);
+                // calculate derivatives
+                for(IndexType diff_coeff = curr_order + diff_order[var_id]; diff_coeff > curr_order; diff_coeff--)
+                {
+                    coeff *= diff_coeff;
+                }
+                val += coeff * curr_val;
+
+                // update curr_ variables
+                IndexType next_order = (curr_ptr->var_order(var_id) - diff_order[var_id]);
+                curr_val *= pow(x[var_id], next_order - curr_order);
+                next_start_term = curr_ptr;
+                curr_order = next_order;
+
+                // move ptr
+                curr_ptr = curr_ptr -> next;
+            }
+        }        
+
+        // The last solve from the last "next_start_term" to "end_ptr"
+        coeff = eval_diff_variable(diff_order, x, next_start_term, end_ptr, var_id + 1);
+        for(IndexType diff_coeff = curr_order + diff_order[var_id]; diff_coeff > curr_order; diff_coeff--)
+        {
+            coeff *= diff_coeff;
+        }
+        val += coeff * curr_val;
+    }
+
+    return val;
+}
+
+/* Homogen */
 // derivative
 void Homogen::derivative(IndexType var_id, Homogen & res)
 {
@@ -804,24 +928,6 @@ void Homogen::derivative(IndexType var_id, Homogen & res)
         curr_term_ptr = curr_term_ptr->next;
     }
 
-}
-
-// eval
-Scalar Homogen::eval(const ScalarVec & x)
-{
-    // evaluation of the homogen
-    ScalarVec x_and_res(dim+1);
-    
-    // initialize
-    for(IndexType var_id = 0; var_id < dim; var_id++)
-    {
-        x_and_res[var_id] = x[var_id];
-    }
-    x_and_res[dim] = Scalar(0.0);
-
-    // evaluate
-    traverse_from_node<PolyTerm, ScalarVec>(term_tree, polyterm_accumulate_eval, &x_and_res);
-    return x_and_res[dim];
 }
 
 void homogen_multiplication(const Homogen & f, const Homogen & g, Homogen & h)
@@ -876,7 +982,6 @@ void homogen_mul_seq(std::vector<Homogen*> & f_seq, IndexType total_order, Homog
     // return the result
     temp_homogen_ptr[(f_seq.size()+1)%2]->copy(res);
 }
-
 
 /* Series */
 Scalar Series::eval(const ScalarVec & x)
@@ -1467,4 +1572,73 @@ void series_comp(Series &f, std::vector<SeriesPowerSeq*> & series_seq_vec, Index
             curr_term = curr_term -> next;
         }
     }
+}
+
+
+/* series and linked list */
+void series_to_linklist(Series & poly_series, PolyLinkedList & poly_list)
+{
+    /* prepare a list of ptrs for each homogenerous terms, 
+        use std::list to record the non-empty terms of them. */ 
+    std::vector<PolyTerm*> homog_term_ptrs(poly_series.curr_kmax - poly_series.curr_kmin);
+    std::list<IndexType> non_empty_ptrs;
+    for(IndexType k_id = 0; k_id < (poly_series.curr_kmax - poly_series.curr_kmin); k_id++)
+    {
+        homog_term_ptrs[k_id] = poly_series.homogen_terms[k_id + poly_series.curr_kmin]->term_tree;
+        if(homog_term_ptrs[k_id] != NULL)
+        {
+            non_empty_ptrs.push_back(k_id);
+        }
+    }
+
+    /* sort term with the help of poly linked list object */
+    poly_list.reinit(poly_series.dim);
+    PolyTerm * insert_ptr = poly_list.term_tree;
+    while(non_empty_ptrs.size())
+    {
+        IndexType min_id = non_empty_ptrs.front();
+        for(auto it = non_empty_ptrs.begin(); it != non_empty_ptrs.end(); it++)
+        {
+            PolyTerm* curr_ptr = homog_term_ptrs[(*it)];
+            CompareResult res = curr_ptr->comp(*homog_term_ptrs[min_id]);
+            if(res == LT)
+            {
+                min_id = *it;
+            }
+        }
+        
+
+
+        // pop the first item
+        PolyTerm * new_term = new PolyTerm(*homog_term_ptrs[min_id]);
+        homog_term_ptrs[min_id] = homog_term_ptrs[min_id] -> next;
+
+        // erase NULL ptrs
+        std::vector<std::list<IndexType>::iterator> list_erase_its;
+        list_erase_its.clear();
+        for(auto it = non_empty_ptrs.begin(); it != non_empty_ptrs.end(); it++)
+        {
+            if(homog_term_ptrs[*it] == NULL)
+            {
+                list_erase_its.push_back(it);
+            }
+        }
+        // erase empty elements
+        for(auto it = list_erase_its.begin(); it != list_erase_its.end(); it++)
+        {
+            non_empty_ptrs.erase((*it));
+        }
+
+        if(poly_list.term_tree == NULL)
+        {
+            poly_list.insert_at_head(new_term);
+            insert_ptr = poly_list.term_tree;
+        }
+        else
+        {
+            poly_list.add_term_after_ptr(insert_ptr, new_term);
+            insert_ptr = insert_ptr->next;
+        }
+    }
+
 }

@@ -120,41 +120,39 @@ typedef struct MatrixIndexType
 } MatrixIndexType;
 
 
-
-/* Homogeneous polymial*/
-class Homogen
+/* Polynomials implemented by linked list */
+class PolyLinkedList
 {
-public:
-    IndexType n_terms, dim, order;
+public: 
+    IndexType n_terms, dim;
     PolyTerm * term_tree = NULL;
-    Homogen(IndexType dim, IndexType order):dim(dim), order(order){
+    PolyLinkedList(IndexType dim):dim(dim){
         n_terms = 0;
         term_tree = NULL;
     };
-    Homogen(std::vector<Monomial> & monomial_vec);
-    ~Homogen()
+    PolyLinkedList(std::vector<Monomial> & monomial_vec);
+    ~PolyLinkedList()
     {
         destroy_tree<PolyTerm>(term_tree);
     }
 
     /* Utilities */
-    void reinit(IndexType dim, IndexType order)
+    void reinit(IndexType dim)
     {
         this->dim = dim;
-        this->order = order;
         this->n_terms = 0;
         destroy_tree<PolyTerm>(this->term_tree);
         this->term_tree = NULL;
     }
 
     void remove_zeros();
-    void copy(Homogen &);
-    void copy_call(void (*funcall)(PolyTerm*), Homogen &);
+    void copy(PolyLinkedList &);
+    void copy_call(void (*funcall)(PolyTerm*), PolyLinkedList &);
     
     template <typename DataType>
-    void copy_call(void (*funcall)(PolyTerm*, DataType*), DataType* data, Homogen & new_homog)
+    void copy_call(void (*funcall)(PolyTerm*, DataType*), DataType* data, PolyLinkedList & new_homog)
     {
-        new_homog.reinit(dim, order);
+        new_homog.reinit(dim);
 
         PolyTerm * new_term_ptr = NULL;
         PolyTerm * curr_term_ptr = term_tree;
@@ -179,7 +177,6 @@ public:
     void print_info()
     {
         STDOUT << "=================\n";
-        STDOUT << "Order: " << order << '\n';
         STDOUT << "Total terms: " << n_terms << '\n';
         STDOUT << "-----------------\n";
         traverse_from_node<PolyTerm>(term_tree, polyterm_print_info);
@@ -191,6 +188,11 @@ public:
     void add_term(PolyTerm * new_term);
     void add_term(Monomial new_term){
         PolyTerm * new_term_ptr = new PolyTerm(new_term);
+        add_term(new_term_ptr);
+    }
+    void add_term(Scalar coeff, const IndexVec & order_var)
+    {
+        PolyTerm * new_term_ptr = new PolyTerm(coeff, order_var);
         add_term(new_term_ptr);
     }
 
@@ -228,22 +230,274 @@ public:
     /* Mathematics */
 
     // add another to this, but the terms of another will be destroyed
-    void destructive_add_self(Homogen & another);
+    void destructive_add_self(PolyLinkedList & another);
 
     // add up to the third object, and all the terms of self and the other operand
     // will all be destroyed.
-    void destructive_add(Homogen & another, Homogen& new_homog);
+    void destructive_add(PolyLinkedList & another, PolyLinkedList& new_homog);
 
     // add to self without destroy the other one
-    void add_self(Homogen & another);
+    void add_self(PolyLinkedList & another);
 
-    // add to the third Homogen
-    void add(Homogen & another, Homogen & result_copy);
+    // add to the third poly
+    void add(PolyLinkedList & another, PolyLinkedList & result_copy);
 
     // scalar multiplication
     void scalar_mul_self(Scalar k){
         traverse_from_node<PolyTerm, Scalar>(term_tree, polyterm_scalar_mul, &k);
     }
+    void scalar_mul(Scalar k, PolyLinkedList & new_homog){
+        copy_call<Scalar>(polyterm_scalar_mul, &k, new_homog);
+    }
+
+    // negative and substraction
+    void neg_self(){
+        traverse_from_node<PolyTerm>(term_tree, polyterm_turn_neg);
+    }
+    void neg(PolyLinkedList & new_homog){
+        copy_call(polyterm_turn_neg, new_homog);
+    }
+    void destructive_subs_self(PolyLinkedList & another){
+        another.neg_self();
+        destructive_add_self(another);
+    }
+    void subs_self(PolyLinkedList & another){
+        another.neg_self();
+        add_self(another);
+        another.neg_self();
+    }
+    void subs(PolyLinkedList & another, PolyLinkedList & new_homog){
+        another.neg_self();
+        add(another, new_homog);
+        another.neg_self();
+    }
+
+    void destructive_subs(PolyLinkedList & another, PolyLinkedList & new_homog){
+        another.neg_self();
+        destructive_add(another, new_homog);
+    }
+
+    /* Evaluation */
+    Scalar eval(const ScalarVec & x)
+    {
+        IndexVec diff_order(dim);
+        for(auto it = diff_order.begin(); it != diff_order.end(); it++)
+        {
+            (*it) = 0;
+        }
+        return eval_diff(diff_order, x);
+    }
+
+    Scalar eval_diff(const IndexVec & diff_order, const ScalarVec & x)
+    {
+        return eval_diff_variable(diff_order, x, term_tree, NULL, 0);
+    }
+
+
+    /* batch operation */
+
+    // evaluation
+    EigenVectorX batch_eval(const IndexVec & diff_order, const EigenMatrixX x)
+    {
+        assert(dim == x.rows());
+        EigenVectorX result_vec(x.cols());
+        for(IndexType col_id = 0; col_id < x.cols(); col_id ++)
+        {
+            ScalarVec curr_col(x.col(col_id).data(), x.col(col_id).data() + dim);
+            result_vec(col_id) = eval_diff(diff_order, curr_col);
+        }
+        return result_vec;
+    }
+
+    // set data
+    void batch_add_elements(const ScalarVec & coeff, const IndexVec & orders)
+    {
+        assert(orders.size() == (dim * coeff.size()));
+        IndexVec::const_iterator order_it = orders.begin();
+        for(ScalarVec::const_iterator coeff_it = coeff.begin(); coeff_it != coeff.end(); ++coeff_it)
+        {
+            Scalar curr_coeff = *coeff_it;
+            IndexVec curr_order_var(dim);
+            for(IndexVec::iterator curr_order_it = curr_order_var.begin(); 
+                curr_order_it != curr_order_var.end(); curr_order_it++)
+            {
+                (*curr_order_it) = (*order_it);
+                order_it ++;
+            }
+
+            // add new terms
+            add_term(curr_coeff, curr_order_var);
+        }
+    }
+
+    // get data
+    void batch_get_data(ScalarVec & coeff, IndexVec & orders)
+    {
+        coeff.clear(); orders.clear();
+        coeff.resize(n_terms); orders.resize(n_terms * dim);
+        IndexVec::iterator order_it = orders.begin();
+        ScalarVec::iterator coeff_it = coeff.begin();
+
+        // traverse all terms
+        PolyTerm * curr_ptr = term_tree;
+        while(curr_ptr != NULL)
+        {
+            (*coeff_it) = curr_ptr -> coeff;
+            coeff_it ++;
+            for(IndexType var_id = 0; var_id < dim; var_id++)
+            {
+                (*order_it) = curr_ptr -> var_order(var_id);
+                order_it ++;
+            }
+
+            curr_ptr = curr_ptr->next;
+        }
+
+    }
+    
+    // initialize with data
+    void init_with_data(const ScalarVec & coeff, const IndexVec & orders)
+    {
+        reinit(dim);
+        assert(orders.size() == (dim * coeff.size()));
+        IndexVec::const_iterator order_it = orders.begin();
+        PolyTerm * curr_insert_ptr = term_tree;
+        for(ScalarVec::const_iterator coeff_it = coeff.begin(); coeff_it != coeff.end(); ++coeff_it)
+        {
+            Scalar curr_coeff = *coeff_it;
+            IndexVec curr_order_var(dim);
+            for(IndexVec::iterator curr_order_it = curr_order_var.begin(); 
+                curr_order_it != curr_order_var.end(); curr_order_it++)
+            {
+                (*curr_order_it) = (*order_it);
+                order_it ++;
+            }
+
+            PolyTerm * curr_term = new PolyTerm(curr_coeff, curr_order_var);
+            // add new terms
+            if(term_tree == NULL)
+            {
+                insert_at_head(curr_term);
+                curr_insert_ptr = term_tree;
+            }
+            else
+            {
+                add_term_after_ptr(curr_insert_ptr, curr_term);
+                curr_insert_ptr = curr_insert_ptr->next;
+            }
+        }
+    }
+
+private:
+    Scalar eval_diff_variable(const IndexVec & diff_order, const ScalarVec & x, 
+                PolyTerm* start_ptr, PolyTerm* end_ptr, IndexType var_id);
+
+};
+
+/* Homogeneous polymial*/
+class Homogen: public PolyLinkedList
+{
+public:
+    IndexType order;
+    Homogen(IndexType dim, IndexType order):PolyLinkedList(dim), order(order){
+    };
+    Homogen(std::vector<Monomial> & monomial_vec): PolyLinkedList(monomial_vec){};
+
+    /* Utilities */
+    void reinit(IndexType dim, IndexType order)
+    {
+        this->order = order;
+        PolyLinkedList::reinit(dim);
+    }
+
+    void copy(Homogen & new_homog){
+        new_homog.reinit(dim, order);
+        PolyLinkedList::copy(new_homog);
+    };
+
+    void copy_call(void (*funcall)(PolyTerm*), Homogen & new_homog){
+        new_homog.reinit(dim, order);
+        PolyLinkedList::copy_call(funcall, new_homog);
+    };
+    
+    template <typename DataType>
+    void copy_call(void (*funcall)(PolyTerm*, DataType*), DataType* data, Homogen & new_homog)
+    {
+        new_homog.reinit(dim, order);
+        PolyLinkedList::copy_call<DataType>(funcall, data, new_homog);
+    }
+
+    void print_info()
+    {
+        STDOUT << "=================\n";
+        STDOUT << "Order: " << order << '\n';
+        STDOUT << "Total terms: " << n_terms << '\n';
+        STDOUT << "-----------------\n";
+        traverse_from_node<PolyTerm>(term_tree, polyterm_print_info);
+    }
+
+    /* Link list manipulation*/
+    /* add term to the current homogenerous polynomial, 
+      the new term is referenced by pointer */     
+    void add_term(PolyTerm * new_term)
+    {
+        assert(new_term->order == order);
+        PolyLinkedList::add_term(new_term);
+    }
+    void add_term(Monomial new_term){
+        assert(new_term.order == order);
+        PolyLinkedList::add_term(new_term);
+    }
+
+    void add_term_after_ptr(PolyTerm * curr_term, PolyTerm * new_term)
+    {
+        assert(order == new_term->order);
+        PolyLinkedList::add_term_after_ptr(curr_term, new_term);
+    }
+    void insert_at_head(PolyTerm * new_term)
+    {
+        assert(order == new_term->order);
+        PolyLinkedList::insert_at_head(new_term);
+    }
+
+    /* Mathematics */
+
+    // add another to this, but the terms of another will be destroyed
+    void destructive_add_self(Homogen & another)
+    {
+        assert(another.order == order);
+        PolyLinkedList::destructive_add_self(another);
+    }
+
+    // add up to the third object, and all the terms of self and the other operand
+    // will all be destroyed.
+    void destructive_add(Homogen & another, Homogen& new_homog)
+    {
+        assert(another.order == order);
+        new_homog.reinit(dim, order);
+        PolyLinkedList::destructive_add(another, new_homog);
+    }
+
+    // add to self without destroy the other one
+    void add_self(Homogen & another)
+    {
+        assert(another.order == order);
+        PolyLinkedList::add_self(another);
+    }
+
+    // add to the third Homogen
+    void add(Homogen & another, Homogen & result_copy)
+    {
+        assert(another.order == order);
+        result_copy.reinit(dim, order);
+        PolyLinkedList::add(another, result_copy);
+    }
+
+    // scalar multiplication
+    void scalar_mul_self(Scalar k){
+        traverse_from_node<PolyTerm, Scalar>(term_tree, polyterm_scalar_mul, &k);
+    }
+
     void scalar_mul(Scalar k, Homogen & new_homog){
         copy_call<Scalar>(polyterm_scalar_mul, &k, new_homog);
     }
@@ -275,11 +529,8 @@ public:
         destructive_add(another, new_homog);
     }
 
-    // derivative
+    // // derivative
     void derivative(IndexType var_id, Homogen & res);
-
-    /* Evaluation */
-    Scalar eval(const ScalarVec & x);
 };
 
 class PolyMulSweeper
@@ -560,5 +811,8 @@ public:
 /* composition with the help of series power sequence */
 void term_comp(Monomial & f, std::vector<SeriesPowerSeq*> & series_seq_vec, IndexType k, Homogen& res);
 void series_comp(Series &f, std::vector<SeriesPowerSeq*> & series_seq_vec, IndexType k, Homogen& res);
+
+/* series and linked list */
+void series_to_linklist(Series & poly_series, PolyLinkedList & poly_list);
 
 #endif

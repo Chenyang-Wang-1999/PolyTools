@@ -37,81 +37,91 @@ int main()
     Homogen f(dim, order), g(dim, order), h(dim, order);
 
     srand((unsigned int) time(NULL));
-    random_homogen(N_terms, order, dim, f);
-    random_homogen(N_terms, order, dim, g);
 
     // STDOUT << "f:\n";
     // f.print_info();
     // STDOUT << '\n';
 
     // test reinit
-    // STDOUT << "------Test Reinit-------\n";
-    // f.reinit(dim, order);
-    // f.print_info();
-    // STDOUT << "\n";
+    random_homogen(N_terms, order, dim, f);
+    random_homogen(N_terms, order, dim, g);
+    STDOUT << "------Test Reinit-------\n";
+    f.reinit(dim, order);
+    f.print_info();
+    STDOUT << "\n";
 
     // test copy
-    // STDOUT << "------Test Copy--------\n";
-    // f.print_info();
-    // g.print_info();
-    // STDOUT << "------copy------\n";
-    // f.copy(g);
-    // g.print_info();
-    // STDOUT << '\n';
+    random_homogen(N_terms, order, dim, f);
+    random_homogen(N_terms, order, dim, g);
+    STDOUT << "------Test Copy--------\n";
+    f.print_info();
+    g.print_info();
+    STDOUT << "------copy------\n";
+    f.copy(g);
+    g.print_info();
+    STDOUT << '\n';
 
     // negative:
-    // STDOUT << "======Test neg=======\n";
-    // STDOUT << "f:\n";
-    // f.print_info();
+    random_homogen(N_terms, order, dim, f);
+    random_homogen(N_terms, order, dim, g);
+    STDOUT << "======Test neg=======\n";
+    STDOUT << "f:\n";
+    f.print_info();
 
-    // f.neg_self();
-    // STDOUT << "f after neg_self:\n";
-    // f.print_info();
+    f.neg_self();
+    STDOUT << "f after neg_self:\n";
+    f.print_info();
 
-    // f.neg(g);
-    // STDOUT << "f after neg:\n";
-    // f.print_info();
-    // STDOUT << "g after neg:\n";
-    // g.print_info();
-    // STDOUT << "------Test neg-------\n";
+    f.neg(g);
+    STDOUT << "f after neg:\n";
+    f.print_info();
+    STDOUT << "g after neg:\n";
+    g.print_info();
+    STDOUT << "------Test neg-------\n";
 
-    // // scalar mult
-    // STDOUT << "========Test Scalar Mult=========\n";
-    // Scalar k(0.0, 1.0);
-    // STDOUT << "f:\n";
-    // f.print_info();
+    // scalar mult
+    random_homogen(N_terms, order, dim, f);
+    random_homogen(N_terms, order, dim, g);
+    STDOUT << "========Test Scalar Mult=========\n";
+    Scalar k(0.0, 1.0);
+    STDOUT << "f:\n";
+    f.print_info();
 
-    // f.scalar_mul_self(k);
-    // STDOUT << "f after scalar_mul_self\n";
-    // f.print_info();
+    f.scalar_mul_self(k);
+    STDOUT << "f after scalar_mul_self\n";
+    f.print_info();
 
-    // f.scalar_mul(k, g);
-    // STDOUT << "f after scalar_mul(k, g)\n";
-    // f.print_info();
-    // STDOUT << "g after scalar_mul(k, g)\n";
-    // g.print_info();
+    f.scalar_mul(k, g);
+    STDOUT << "f after scalar_mul(k, g)\n";
+    f.print_info();
+    STDOUT << "g after scalar_mul(k, g)\n";
+    g.print_info();
 
-    // STDOUT << "--------Test Scalar Mult---------\n";
+    STDOUT << "--------Test Scalar Mult---------\n";
 
-    // STDOUT << "========Test Add Self=========\n";
-    // STDOUT << "f\n";
-    // f.print_info();
-    // STDOUT << "g\n";
-    // g.print_info();
+    random_homogen(N_terms, order, dim, f);
+    random_homogen(N_terms, order, dim, g);
+    STDOUT << "========Test Add Self=========\n";
+    STDOUT << "f\n";
+    f.print_info();
+    STDOUT << "g\n";
+    g.print_info();
 
-    // f.add_self(g);
-    // STDOUT << "f after add_self(g)\n";
-    // f.print_info();
-    // STDOUT << "g after add_self(g)\n";
-    // g.print_info();
+    f.add_self(g);
+    STDOUT << "f after add_self(g)\n";
+    f.print_info();
+    STDOUT << "g after add_self(g)\n";
+    g.print_info();
 
-    // f.destructive_add_self(g);
-    // STDOUT << "f after destructive_add_self(g)\n";
-    // f.print_info();
-    // STDOUT << "g after destructive_add_self(g)\n";
-    // g.print_info();
-    // STDOUT << "--------Test Add Self---------\n";
+    f.destructive_add_self(g);
+    STDOUT << "f after destructive_add_self(g)\n";
+    f.print_info();
+    STDOUT << "g after destructive_add_self(g)\n";
+    g.print_info();
+    STDOUT << "--------Test Add Self---------\n";
 
+    random_homogen(N_terms, order, dim, f);
+    random_homogen(N_terms, order, dim, g);
     STDOUT << "========Test Add=========\n";
     STDOUT << "f\n";
     f.print_info();
@@ -136,65 +146,69 @@ int main()
 
     STDOUT << "--------Test Add---------\n";
 
-    // STDOUT << "========Test Subs Self=========\n";
-    // STDOUT << "f\n";
-    // f.print_info();
-    // STDOUT << "g\n";
-    // g.print_info();
+    random_homogen(N_terms, order, dim, f);
+    random_homogen(N_terms, order, dim, g);
+    STDOUT << "========Test Subs Self=========\n";
+    STDOUT << "f\n";
+    f.print_info();
+    STDOUT << "g\n";
+    g.print_info();
 
-    // f.subs_self(g);
-    // STDOUT << "f after subs_self(g)\n";
-    // f.print_info();
-    // STDOUT << "g after subs_self(g)\n";
-    // g.print_info();
+    f.subs_self(g);
+    STDOUT << "f after subs_self(g)\n";
+    f.print_info();
+    STDOUT << "g after subs_self(g)\n";
+    g.print_info();
 
-    // f.destructive_subs_self(g);
-    // STDOUT << "f after destructive_subs_self(g)\n";
-    // f.print_info();
-    // STDOUT << "g after destructive_subs_self(g)\n";
-    // g.print_info();
-    // STDOUT << "--------Test Subs Self---------\n";
+    f.destructive_subs_self(g);
+    STDOUT << "f after destructive_subs_self(g)\n";
+    f.print_info();
+    STDOUT << "g after destructive_subs_self(g)\n";
+    g.print_info();
+    STDOUT << "--------Test Subs Self---------\n";
 
-    // STDOUT << "========Test Subs=========\n";
-    // STDOUT << "f\n";
-    // f.print_info();
-    // STDOUT << "g\n";
-    // g.print_info();
+    STDOUT << "========Test Subs=========\n";
+    STDOUT << "f\n";
+    f.print_info();
+    STDOUT << "g\n";
+    g.print_info();
 
-    // f.subs(g, h);
-    // STDOUT << "f after f.subs(g,h)\n";
-    // f.print_info();
-    // STDOUT << "g after f.subs(g,h)\n";
-    // g.print_info();
-    // STDOUT << "h after f.subs(g,h)\n";
-    // h.print_info();
+    f.subs(g, h);
+    STDOUT << "f after f.subs(g,h)\n";
+    f.print_info();
+    STDOUT << "g after f.subs(g,h)\n";
+    g.print_info();
+    STDOUT << "h after f.subs(g,h)\n";
+    h.print_info();
 
-    // f.destructive_subs(g, h);
-    // STDOUT << "f after f.destructive_subs(g,h)\n";
-    // f.print_info();
-    // STDOUT << "g after f.destructive_subs(g,h)\n";
-    // g.print_info();
-    // STDOUT << "h after f.destructive_subs(g,h)\n";
-    // h.print_info();
+    f.destructive_subs(g, h);
+    STDOUT << "f after f.destructive_subs(g,h)\n";
+    f.print_info();
+    STDOUT << "g after f.destructive_subs(g,h)\n";
+    g.print_info();
+    STDOUT << "h after f.destructive_subs(g,h)\n";
+    h.print_info();
 
-    // STDOUT << "--------Test Subs---------\n";
+    STDOUT << "--------Test Subs---------\n";
 
-    // STDOUT << "=========Test Insert Zero==========\n";
-    // f.neg(g);
-    // f.print_info();
-    // g.print_info();
+    random_homogen(N_terms, order, dim, f);
+    random_homogen(N_terms, order, dim, g);
+    STDOUT << "=========Test Insert Zero==========\n";
+    f.neg(g);
+    f.print_info();
+    g.print_info();
 
-    // PolyTerm * term_ptr = g.pop_first_term();
-    // f.add_term(term_ptr);
-    // f.print_info();
-    // g.print_info();
+    PolyTerm * term_ptr = g.pop_first_term();
+    f.add_term(term_ptr);
+    f.print_info();
+    g.print_info();
 
 
-    // term_ptr = g.pop_first_term();
-    // term_ptr -> ~PolyTerm();
-    // term_ptr = g.pop_first_term();
-    // f.add_term(term_ptr);
-    // f.print_info();
-    // g.print_info();
-    // STDOUT << "---------Test Insert Zero----------\n";
+    term_ptr = g.pop_first_term();
+    term_ptr -> ~PolyTerm();
+    term_ptr = g.pop_first_term();
+    f.add_term(term_ptr);
+    f.print_info();
+    g.print_info();
+    STDOUT << "---------Test Insert Zero----------\n";
 }

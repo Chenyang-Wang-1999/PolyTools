@@ -17,4 +17,4 @@ make all
 cd .. 
 
 cp pybind/*.so python/py_invariant_manifold
-cp -r python/py_invariant_manifold build
+cp -r python/* build

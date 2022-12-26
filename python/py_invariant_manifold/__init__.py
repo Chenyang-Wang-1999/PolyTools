@@ -9,6 +9,7 @@ import py_invariant_manifold._invariant_manifold as c_invariant_manifold
 import sympy as sym
 import numpy as np
 import csv
+from scipy import io as spio
 
 # definitions
 POLY_F = 0
@@ -27,6 +28,131 @@ class CIndexVec(c_invariant_manifold.CIndexVec):
 class CScalarVec(c_invariant_manifold.CScalarVec):
     def __init__(self, vec):
         super().__init__(vec)
+
+class CPolyLinkedList(c_invariant_manifold._CPolyLinkedList):
+    def __init__(self, dim):
+        super().__init__(dim)
+
+    def reinit(self, dim):
+        super().reinit(dim)
+    
+    def remove_zeros(self):
+        super().remove_zeros()
+
+    def copy(self, another):
+        super().copy(another)
+
+    def print_info(self):
+        super().print_info()
+    
+    def destructive_add_self(self, another):
+        super().destructive_add_self(another)
+
+    def destructive_add(self, another):
+        result = CPolyLinkedList(self.dim)
+        super().destructive_add(another, result)
+        return result
+
+    def add_self(self, another):
+        super().add_self(another)
+
+    def add(self, another):
+        result = CPolyLinkedList(self.dim)
+        super().add(another, result)
+        return result
+
+    def scalar_mul_self(self, k):
+        super().scalar_mul_self(k)
+    
+    def scalar_mul(self, k):
+        result = CPolyLinkedList(self.dim)
+        super().scalar_mul(k, result)
+        return result
+
+    def neg_self(self):
+        super().neg_self()
+
+    def neg(self):
+        result = CPolyLinkedList(self.dim)
+        super().neg(result)
+        return result
+
+    def destructive_subs_self(self, another):
+        super().destructure_subs_self(another)
+
+    def subs_self(self, another):
+        super().subs_self(another)
+
+    def destructive_subs(self, another):
+        result = CPolyLinkedList(self.dim)
+        super().destructure_subs(another, result)
+        return result
+    
+    def subs(self, another):
+        result = CPolyLinkedList(self.dim)
+        super().subs(another, result)
+        return result
+
+    def eval(self, x):
+        if(not isinstance(x, CScalarVec)):
+            x = CScalarVec(x)
+        return super().eval(x)
+
+    def eval_diff(self, diff_order, x):
+        if(not isinstance(diff_order, CIndexVec)):
+            diff_order = CIndexVec(diff_order)
+
+        if(not isinstance(x, CScalarVec)):
+            x = CScalarVec(x)
+
+        return super().eval_diff(diff_order, x)
+
+    def batch_eval(self, diff_order, x_arr):
+        if(not isinstance(diff_order, CIndexVec)):
+            diff_order = CIndexVec(diff_order)
+        return super().batch_eval(diff_order, x_arr)
+
+    def batch_add_elements(self, coeffs:CScalarVec, orders:CIndexVec):
+        if(not isinstance(coeffs, CScalarVec)):
+            coeffs = CScalarVec(coeffs)
+        if(not isinstance(orders, CIndexVec)):
+            orders = CIndexVec(orders)
+        super().batch_add_elements(coeffs, orders)
+
+    def batch_get_data(self):
+        _coeffs = CScalarVec([])
+        _orders = CIndexVec([])
+        # print("get_data_begin")
+        super().batch_get_data(_coeffs, _orders)
+        # print("get_data_finished")
+        coeffs = np.array(_coeffs)
+        orders = np.array(_orders, dtype=int).reshape((-1,3))
+        return (coeffs, orders)
+
+    def init_with_data(self, coeff, orders):
+        _coeffs = CScalarVec(coeff)
+        _orders = CIndexVec(orders)
+        super().init_with_data(_coeffs, _orders)
+
+    # format: coeffs: np.array(complex), orders: np.array(int)
+    def save_to_file(self, fname):
+        coeffs, orders = self.batch_get_data()
+        data = {}
+        data['coeffs'] = coeffs
+        data['orders'] = orders
+        data['dim'] = self.dim
+        spio.savemat(fname, data)
+    
+def poly_load_from_file(fname):
+    data = spio.loadmat(fname)
+    coeffs = data['coeffs'].flatten()
+    orders = data['orders'].flatten()
+    dim = data['dim'][0,0]
+
+    new_poly = CPolyLinkedList(dim)
+    new_poly.init_with_data(coeffs, orders)
+    return new_poly
+        
 
 class InvariantManifoldSolverPy:
     c_solver: c_invariant_manifold._CInvariantManifoldSolver
@@ -122,6 +248,17 @@ class InvariantManifoldSolverPy:
 
     def jacobian(self, P):
         pass
+
+    def get_poly_for_val(self, which_poly, val_id):
+        curr_poly = CPolyLinkedList(self.get_poly_var_dim(which_poly))
+        self.c_solver.get_poly(which_poly,curr_poly , val_id)
+        return curr_poly
+
+    def get_poly(self, which_poly):
+        all_polys = []
+        for val_id in range(self.get_poly_val_dim(which_poly)):
+            all_polys.append(self.get_poly_for_val(which_poly, val_id))
+        return all_polys
 
     # retrieve data
     def get_poly_data(self, which_poly, from_k):

@@ -6,6 +6,7 @@
 
 #include "../src/basic_defs.h"
 #include "../src/invariant_manifold_solver.h"
+#include "../src/polys.h"
 #include <pybind11/pybind11.h>
 #include <pybind11/complex.h>
 #include <pybind11/stl_bind.h>
@@ -19,6 +20,33 @@ PYBIND11_MODULE(_invariant_manifold, m)
 {
     py::bind_vector<IndexVec>(m, "CIndexVec");
     py::bind_vector<ScalarVec>(m, "CScalarVec");
+    py::class_<PolyLinkedList>(m, "_CPolyLinkedList")
+        .def(py::init<IndexType>())
+        .def("reinit", &PolyLinkedList::reinit)
+        .def("remove_zeros", &PolyLinkedList::remove_zeros)
+        .def("copy", &PolyLinkedList::copy)
+        .def("print_info", &PolyLinkedList::print_info)
+        .def("destructive_add_self", &PolyLinkedList::destructive_add_self)
+        .def("destructive_add", &PolyLinkedList::destructive_add)
+        .def("add_self", &PolyLinkedList::add_self)
+        .def("add", &PolyLinkedList::add)
+        .def("scalar_mul_self", &PolyLinkedList::scalar_mul_self)
+        .def("scalar_mul", &PolyLinkedList::scalar_mul)
+        .def("neg_self", &PolyLinkedList::neg_self)
+        .def("neg", &PolyLinkedList::neg)
+        .def("destructive_subs_self", &PolyLinkedList::destructive_subs_self)
+        .def("destructive_subs", &PolyLinkedList::destructive_subs)
+        .def("subs_self", &PolyLinkedList::subs_self)
+        .def("subs", &PolyLinkedList::subs)
+        .def("eval", &PolyLinkedList::eval)
+        .def("eval_diff", &PolyLinkedList::eval_diff)
+        .def("batch_eval", &PolyLinkedList::batch_eval)
+        .def("batch_add_elements", &PolyLinkedList::batch_add_elements)
+        .def("batch_get_data", &PolyLinkedList::batch_get_data)
+        .def("init_with_data", &PolyLinkedList::init_with_data)
+        .def_readonly("dim", &PolyLinkedList::dim)
+        .def_readonly("n_terms", &PolyLinkedList::n_terms);
+
     py::class_<InvariantManifoldSolver>(m, "_CInvariantManifoldSolver")
         .def(py::init<IndexType, IndexType, IndexType>())
         .def_readwrite("phys_dim", &InvariantManifoldSolver::phys_dim)
@@ -40,6 +68,7 @@ PYBIND11_MODULE(_invariant_manifold, m)
         .def("get_k", &InvariantManifoldSolver::get_k)
         .def("calculate_err", &InvariantManifoldSolver::calculate_err)
         .def("clear_all", &InvariantManifoldSolver::clear_all)
+        .def("get_poly", &InvariantManifoldSolver::get_poly)
         .def("init_with_T", &InvariantManifoldSolver::init);
     // py::class_<Monomial>(m, "_Monomial")
     //     .def(py::init<Scalar, IndexVec>())

@@ -10,8 +10,6 @@
 #include "polys.h"
 #include <eigen3/Eigen/Core>
 
-typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> EigenMatrixX;
-typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> EigenVectorX;
 
 #define POLY_F 0
 #define POLY_f 1
@@ -93,6 +91,9 @@ public:
 
     // evaluation
     EigenMatrixX eval(IndexType which_poly, EigenMatrixX x_arr);
+
+    // get poly as linked list
+    void get_poly(IndexType which_poly, PolyLinkedList & data_poly, IndexType val_id);
 
     IndexType get_k()
     {

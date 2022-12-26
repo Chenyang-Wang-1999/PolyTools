@@ -9,11 +9,14 @@
 
 #include <complex>
 #include <vector>
+#include <eigen3/Eigen/Core>
 typedef std::complex<double> Scalar;
 typedef unsigned int IndexType;
 typedef std::vector<Scalar> ScalarVec;
 typedef std::vector<IndexType> IndexVec; 
 typedef enum{GT, EQ, LT, GEQ, LEQ} CompareResult;
+typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> EigenMatrixX;
+typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> EigenVectorX;
 #define STDOUT std::cout
 #define STDERR std::cerr
 #define EPS 1e-16

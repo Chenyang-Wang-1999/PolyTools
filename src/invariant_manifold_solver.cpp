@@ -5,6 +5,7 @@
  */
 
 #include "invariant_manifold_solver.h"
+#include "basic_defs.h"
 #include <eigen3/Eigen/Eigenvalues>
 
 void InvariantManifoldSolver::clear_all()
@@ -240,6 +241,34 @@ bool InvariantManifoldSolver::load_data_and_move()
     else
     {
         return move_to_nearest_nonzero_term();
+    }
+}
+
+// get poly as linked list
+void InvariantManifoldSolver::get_poly(IndexType which_poly, PolyLinkedList & data_poly, IndexType val_id)
+{
+    PolyLinkedList & s_vec_ref = *(s_vec.homog_vec[val_id]);
+    PolyLinkedList & Ek_ref = *(Ek.homog_vec[val_id]);
+    switch(which_poly)
+    {
+    case POLY_F:
+        series_to_linklist(*(F.series_vec[val_id]), data_poly);        
+        break;
+    case POLY_W:
+        series_to_linklist(*(W.series_vec[val_id]), data_poly);        
+        break;
+    case POLY_f:
+        series_to_linklist(*(f.series_vec[val_id]), data_poly);        
+        break;
+    case POLY_s:
+        s_vec_ref.copy(data_poly);
+        break;
+    case POLY_Ek:
+        Ek_ref.copy(data_poly);
+        break;
+    default:
+        STDERR << "invalid poly index\n";
+        assert(0);
     }
 }
 
