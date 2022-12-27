@@ -16,6 +16,16 @@ $$\dot{x}=\mathcal{F}(x),x\in \mathscr{A}, \mathcal{F}\in\Gamma(T\mathscr{A})$$
 - Terms of $\xi_k$. Suppose the monomial terms of $\xi_k$ is denoted as $\xi_m$, then $$D\xi_m\Lambda_Ls=\sum\limits_{j=1}^d m_j\lambda_j \xi_m :=m\lambda_L\xi_m$$  $$\begin{align*} \Lambda_L\xi^L_m+T\xi_m^N-m\lambda_L\xi_m^L-f_m(s) &=\eta_m^L(s) \\ \Lambda_N\xi_m^N-m\lambda_L\xi_m^N &=\eta^N_m(s) \end{align*}$$
 - Elements of $\xi$ and $f$ $$\begin{align*} \lambda_j\xi^j_m+(T\xi_m^N)^j-m\lambda_L\xi_m^j-f_m^j(s) &=\eta_m^j(s),j\leq d \\ \Lambda_j\xi_m^j-m\lambda_L\xi_m^j &=\eta^j_m(s), j>d \end{align*}$$
 
+# Scaling of the polynomials
+In numerical calculations, round-off error arises when the amplitudes of the two operands differ too much. In specific cases, the coefficients of each power term should decrease with power law, so that the range of convergency is near 1. 
+
+When the range of convergency is $r$, we can scale the variable $s$ by $s=ru$. By definition, $$F(W(s))=DW(s)f(s)$$then $$F(W(ru))=DW(ru)f(ru)$$ 
+
+Define $\tilde{W}(u)=W(ru), \tilde{f}(u)=f(ru)$, then $D\tilde{W}(u)=rDW(ru)$. Then$$rF(\tilde{W}(u))=D\tilde{W}(u)\tilde{f}(u).$$ Therefore, the scaling of the variables can be achieved by scale the value of $F$ by $\tilde{F}=rF$
+
+For data retrieving, the calculated data are $\tilde{F}=rF,\tilde{W}=W(r\cdot)$ and $\tilde{f}=f(r\cdot)$, so $F=\frac{1}{r}\tilde{F},W=\tilde{W}(\frac{1}{r}\cdot)$, and $f=\tilde{f}(\frac
+{1}{r}\cdot)$
+
 # Code structure
 - Input arguments: matrix $P$, matrix $T$, diagonal terms $\lambda_1,\dots, \lambda_n$, polynomial $F$
 - Output arguments: polynomial $W$ and polynomial $f$

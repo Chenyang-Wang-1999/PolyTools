@@ -111,6 +111,7 @@ void polyterm_turn_neg(PolyTerm * term);
 void polyterm_scalar_mul(PolyTerm * term, Scalar * k);
 void polyterm_print_info(PolyTerm * term);
 void polyterm_accumulate_eval(PolyTerm *term, ScalarVec * x_and_res);
+void polyterm_scale_term(PolyTerm * term, ScalarVec * scale_factor);
 
 /* Tools for homogen multiplication */
 typedef struct MatrixIndexType
@@ -248,6 +249,16 @@ public:
     }
     void scalar_mul(Scalar k, PolyLinkedList & new_homog){
         copy_call<Scalar>(polyterm_scalar_mul, &k, new_homog);
+    }
+
+    // scale variable
+    void scale_var_self(ScalarVec k){
+        traverse_from_node<PolyTerm, ScalarVec>(term_tree, polyterm_scale_term, &k);
+    }
+
+    void scale_var(ScalarVec k, PolyLinkedList & new_poly)
+    {
+        copy_call<ScalarVec>(polyterm_scale_term, &k, new_poly);
     }
 
     // negative and substraction

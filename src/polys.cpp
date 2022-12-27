@@ -139,6 +139,15 @@ void polyterm_accumulate_eval(PolyTerm *term, ScalarVec * x_and_res)
     (*x_and_res)[term->dim] += res;
 }
 
+void polyterm_scale_term(PolyTerm * term, ScalarVec * scale_factor)
+{
+    for(IndexType var_id = 0; var_id < term->dim; var_id ++)
+    {
+        IndexType var_order = term -> var_order(var_id);        
+        term->coeff *= pow((*scale_factor)[var_id], var_order);
+    }
+}
+
 /* PolyMulSweeper */
 PolyMulSweeper::PolyMulSweeper(const Homogen & f, const Homogen & g)
 {
