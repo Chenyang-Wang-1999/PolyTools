@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-20
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 
 #ifndef BASIC_DEFS_H
@@ -10,7 +10,8 @@
 #include <complex>
 #include <vector>
 #include <eigen3/Eigen/Core>
-typedef std::complex<double> Scalar;
+// typedef std::complex<double> Scalar;
+typedef double Scalar;
 typedef unsigned int IndexType;
 typedef std::vector<Scalar> ScalarVec;
 typedef std::vector<IndexType> IndexVec; 

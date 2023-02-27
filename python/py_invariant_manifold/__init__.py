@@ -1,7 +1,7 @@
 '''
 author:        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
 date:          2022-12-22
-Copyright © Department of Physics, Tsinghua University.  All rights reserved
+Copyright © Department of Physics, Tsinghua University. All rights reserved
 '''
 
 import py_invariant_manifold._invariant_manifold as c_invariant_manifold
@@ -155,7 +155,20 @@ class CPolyLinkedList(c_invariant_manifold._CPolyLinkedList):
         data['orders'] = orders
         data['dim'] = self.dim
         spio.savemat(fname, data)
-    
+
+    def to_str(self, varname:list):
+        coeffs, orders = self.batch_get_data()
+        poly_str = ''
+        for j in range(len(coeffs)):
+            poly_str += "+" + "(%s)"%(str(coeffs[j]))
+            for k in range(self.dim):
+                if(orders[j, k] > 1):
+                    poly_str += '*(%s**%d)'%(varname[k], orders[j,k])
+                elif(orders[j, k] == 1):
+                    poly_str += '*%s'%(varname[k])
+        poly_str += ';'
+        return poly_str   
+
 def poly_load_from_file(fname):
     data = spio.loadmat(fname)
     coeffs = data['coeffs'].flatten()
