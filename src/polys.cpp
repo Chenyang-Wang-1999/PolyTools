@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-18
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 
 #include "polys.h"
@@ -11,10 +11,10 @@
 /* Monomial */
 
 // monomial evaluation
-Scalar Monomial::eval(ScalarVec & x)
+VarScalar Monomial::eval(VarScalarVec & x)
 {
     // for each variable, calculate its order-th pow
-    Scalar val = coeff;
+    VarScalar val = coeff;
     for(IndexType var_id = 0; var_id < dim; var_id++)
     {
         if(_order_var[var_id] != 0)
@@ -133,9 +133,9 @@ void polyterm_print_info(PolyTerm * term){
 }
 
 
-void polyterm_accumulate_eval(PolyTerm *term, ScalarVec * x_and_res)
+void polyterm_accumulate_eval(PolyTerm *term, VarScalarVec * x_and_res)
 {
-    Scalar res = term->eval(*x_and_res);
+    VarScalar res = term->eval(*x_and_res);
     (*x_and_res)[term->dim] += res;
 }
 
@@ -309,7 +309,7 @@ PolyTerm* PolyMulSweeper::next_term()
             indices_stack.erase((*min_term_it));
             PolyTerm * curr_ptr = ptr_matrix[curr_indices.row_id][curr_indices.col_id];
             first_ptr->coeff += curr_ptr->coeff;
-            curr_ptr -> ~PolyTerm();
+            delete curr_ptr;
 
             // push new indices
             new_mat_id_low.row_id = curr_indices.row_id + 1;
@@ -323,7 +323,7 @@ PolyTerm* PolyMulSweeper::next_term()
         // check zero. If zero, destroy the ptr and return NULL
         if(ABS_FUN(first_ptr->coeff) * pow(8.0, first_ptr->order) < EPS)
         {
-            first_ptr -> ~PolyTerm();
+            delete first_ptr;
             return NULL;
         }
         else
@@ -456,7 +456,7 @@ void PolyLinkedList::add_term(PolyTerm * new_term)
     assert(new_term != NULL);
     if(ABS_FUN(new_term->coeff) * pow(8.0, new_term->order) < EPS)
     {
-        new_term -> ~PolyTerm();
+        delete new_term;
         return;
     }
 
@@ -480,9 +480,9 @@ void PolyLinkedList::add_term(PolyTerm * new_term)
         if(ABS_FUN(term_tree->coeff) * pow(8.0, term_tree->order) < EPS)
         {
             PolyTerm * junk_ptr =  pop_first_term();
-            junk_ptr -> ~PolyTerm();
+            delete junk_ptr;
         }
-        new_term -> ~PolyTerm();
+        delete new_term;
         return;
     }
 
@@ -501,11 +501,11 @@ void PolyLinkedList::add_term(PolyTerm * new_term)
         else if (res == EQ)
         {
             curr_ptr->next->coeff += new_term -> coeff;
-            new_term -> ~PolyTerm();
+            delete new_term;
             if(ABS_FUN(curr_ptr->next->coeff) * pow(8.0, curr_ptr->next->order) < EPS)
             {
                 PolyTerm* junk_ptr =  pop_next_term(curr_ptr);
-                junk_ptr -> ~PolyTerm();
+                delete junk_ptr;
             }
             return;
         }
@@ -554,11 +554,11 @@ void PolyLinkedList::destructive_add_self(PolyLinkedList & another)
             case EQ:
                 new_term_ptr = another.pop_first_term();
                 LHS_ptr->coeff += new_term_ptr->coeff;
-                new_term_ptr -> ~PolyTerm();
+                delete new_term_ptr;
                 if(ABS_FUN(LHS_ptr->coeff) * pow(8.0, LHS_ptr->order) < EPS)
                 {
                     PolyTerm * junk_ptr = pop_first_term();
-                    junk_ptr -> ~PolyTerm();
+                    delete junk_ptr;
                     LHS_ptr = term_tree;
                 }
                 break;
@@ -605,11 +605,11 @@ void PolyLinkedList::destructive_add_self(PolyLinkedList & another)
                 case EQ:
                     new_term_ptr = another.pop_first_term();
                     LHS_ptr->next->coeff += new_term_ptr->coeff;
-                    new_term_ptr->~PolyTerm();
+                    delete new_term_ptr;
                     if(ABS_FUN(LHS_ptr->next->coeff) * pow(8.0, LHS_ptr->next->order) < EPS)
                     {
                         PolyTerm * junk_ptr = pop_next_term(LHS_ptr);
-                        junk_ptr -> ~PolyTerm();
+                        delete junk_ptr;
                     }
                     break;
                 default:
@@ -636,7 +636,7 @@ void PolyLinkedList::remove_zeros()
         if(ABS_FUN(term_tree->coeff) * pow(8.0, term_tree->order) < EPS )
         {
             PolyTerm * junk_ptr = pop_first_term();
-            junk_ptr -> ~PolyTerm();
+            delete junk_ptr;
         }
         else
         {
@@ -654,7 +654,7 @@ void PolyLinkedList::remove_zeros()
         if(ABS_FUN(curr_ptr->next->coeff * pow(8.0, curr_ptr->next->order))<EPS)
         {
             PolyTerm * junk_ptr = pop_next_term(curr_ptr);
-            junk_ptr -> ~PolyTerm();
+            delete junk_ptr;
         }
         else
         {
@@ -719,7 +719,7 @@ void PolyLinkedList::destructive_add(PolyLinkedList & another, PolyLinkedList & 
                 new_term_ptr = pop_first_term();
                 another_term_ptr = another.pop_first_term();
                 new_term_ptr->coeff += another_term_ptr -> coeff;
-                another_term_ptr->~PolyTerm();
+                delete another_term_ptr;
                 break;
             default:
                 STDERR << "Error: compare result is not GT, LT or EQ\n";
@@ -735,7 +735,7 @@ void PolyLinkedList::destructive_add(PolyLinkedList & another, PolyLinkedList & 
                 }
                 else
                 {
-                    new_term_ptr -> ~PolyTerm();
+                    delete new_term_ptr;
                 }
                 // bug, n_terms is not updated. new_homog.term_tree = new_term_ptr;
             }
@@ -747,7 +747,7 @@ void PolyLinkedList::destructive_add(PolyLinkedList & another, PolyLinkedList & 
                 }
                 else
                 {
-                    new_term_ptr -> ~PolyTerm();
+                    delete new_term_ptr;
                 }               
             }
 
@@ -797,7 +797,7 @@ void PolyLinkedList::add(PolyLinkedList & another, PolyLinkedList & result_copy)
 // }
 
 
-Scalar PolyLinkedList::eval_diff_variable(const IndexVec & diff_order, const ScalarVec & x, 
+VarScalar PolyLinkedList::eval_diff_variable(const IndexVec & diff_order, const VarScalarVec & x, 
                 PolyTerm* start_ptr, PolyTerm* end_ptr, IndexType var_id)
 {
     PolyTerm* curr_ptr = start_ptr;
@@ -810,7 +810,7 @@ Scalar PolyLinkedList::eval_diff_variable(const IndexVec & diff_order, const Sca
         }
         curr_ptr = curr_ptr -> next;
     }
-    Scalar val = Scalar(0.0);
+    VarScalar val = VarScalar(0.0);
 
     // all order is less then diff order
     if(curr_ptr == end_ptr)
@@ -819,7 +819,7 @@ Scalar PolyLinkedList::eval_diff_variable(const IndexVec & diff_order, const Sca
     }
 
     IndexType curr_order = (curr_ptr->var_order(var_id) - diff_order[var_id]);
-    Scalar curr_val = 1.0;
+    VarScalar curr_val = 1.0;
     if(curr_order > 0)
     {
         curr_val = pow(x[var_id], curr_order);
@@ -835,7 +835,7 @@ Scalar PolyLinkedList::eval_diff_variable(const IndexVec & diff_order, const Sca
         while(curr_ptr != end_ptr)
         {
             // collect values
-            Scalar curr_coeff = curr_ptr->coeff;
+            VarScalar curr_coeff = curr_ptr->coeff;
             // derivative part: n * (n - 1) * ... * (n - m + 1)
             for(IndexType diff_coeff = curr_ptr-> var_order(var_id); 
                 diff_coeff > curr_order; diff_coeff--)
@@ -858,7 +858,7 @@ Scalar PolyLinkedList::eval_diff_variable(const IndexVec & diff_order, const Sca
     else
     {
         PolyTerm * next_start_term = curr_ptr;
-        Scalar coeff = 0.0;
+        VarScalar coeff = 0.0;
         while(curr_ptr != end_ptr)
         {
             if((curr_ptr->var_order(var_id) - diff_order[var_id]) == curr_order)
@@ -993,9 +993,9 @@ void homogen_mul_seq(std::vector<Homogen*> & f_seq, IndexType total_order, Homog
 }
 
 /* Series */
-Scalar Series::eval(const ScalarVec & x)
+VarScalar Series::eval(const VarScalarVec & x)
 {
-    Scalar res = Scalar(0.0);
+    VarScalar res = VarScalar(0.0);
     for(IndexType k = curr_kmin; k < curr_kmax; k++)
     {
         res += homogen_terms[k] -> eval(x);

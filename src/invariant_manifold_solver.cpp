@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-21
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 
 #include "invariant_manifold_solver.h"
@@ -25,15 +25,15 @@ void InvariantManifoldSolver::clear_all()
 
 /* evaluation */
 template<typename PolyType>
-EigenMatrixX eval_poly_vec(const std::vector<PolyType*> & poly_vec, EigenMatrixX x_arr, IndexType val_dim)
+EigenVarMatrixX eval_poly_vec(const std::vector<PolyType*> & poly_vec, EigenVarMatrixX x_arr, IndexType val_dim)
 {
     assert(poly_vec[0] -> dim == x_arr.rows());
-    EigenMatrixX result_matrix(val_dim, x_arr.cols());
+    EigenVarMatrixX result_matrix(val_dim, x_arr.cols());
 
     // evaluate for each row
     for(IndexType col_id = 0; col_id < x_arr.cols(); col_id ++)
     {
-        ScalarVec x_vec(x_arr.col(col_id).data(), x_arr.col(col_id).data() + x_arr.rows());
+        VarScalarVec x_vec(x_arr.col(col_id).data(), x_arr.col(col_id).data() + x_arr.rows());
         for(IndexType row_id = 0; row_id < val_dim; row_id ++)
         {
             result_matrix(row_id, col_id) = poly_vec[row_id] -> eval(x_vec);
@@ -565,7 +565,7 @@ int InvariantManifoldSolver::solve_to_Kceil(bool print_log)
 }
 
 // evaluation
-EigenMatrixX InvariantManifoldSolver::eval(IndexType which_poly, EigenMatrixX x_arr)
+EigenVarMatrixX InvariantManifoldSolver::eval(IndexType which_poly, EigenVarMatrixX x_arr)
 {
     switch(which_poly)
     {

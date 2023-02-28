@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-21
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 
 #include "test_common.h"
@@ -42,7 +42,7 @@ int main()
     // destroy
     for(auto it = series_ptr.begin(); it != series_ptr.end(); it++)
     {
-        (*it) -> ~Series();
+        delete (*it);
     }
     
     return 0;   

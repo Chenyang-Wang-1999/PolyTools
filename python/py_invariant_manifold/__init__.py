@@ -4,7 +4,14 @@ date:          2022-12-22
 Copyright © Department of Physics, Tsinghua University. All rights reserved
 '''
 
-import py_invariant_manifold._invariant_manifold as c_invariant_manifold
+MODE = 'cc'
+if(MODE == 'cc'):
+    import py_invariant_manifold._invariant_manifold_cc as c_invariant_manifold
+elif(MODE == 'rc'):
+    import py_invariant_manifold._invariant_manifold_rc as c_invariant_manifold
+elif(MODE == 'rr'):
+    import py_invariant_manifold._invariant_manifold_rr as c_invariant_manifold
+
 # import _invariant_manifold as c_invariant_manifold
 import sympy as sym
 import numpy as np
@@ -29,6 +36,15 @@ class CIndexVec(c_invariant_manifold.CIndexVec):
 class CScalarVec(c_invariant_manifold.CScalarVec):
     def __init__(self, vec):
         super().__init__(vec)
+
+if(MODE == 'rc'):
+    class CVarScalarVec(c_invariant_manifold.CVarScalarVec):
+        def __init__(self, vec):
+            super().__init__(vec)
+else:
+    class CVarScalarVec(c_invariant_manifold.CScalarVec):
+        def __init__(self, vec):
+            super().__init__(vec)
 
 class CPolyLinkedList(c_invariant_manifold._CPolyLinkedList):
     def __init__(self, dim):
@@ -107,16 +123,16 @@ class CPolyLinkedList(c_invariant_manifold._CPolyLinkedList):
         return result
 
     def eval(self, x):
-        if(not isinstance(x, CScalarVec)):
-            x = CScalarVec(x)
+        if(not isinstance(x, CVarScalarVec)):
+            x = CVarScalarVec(x)
         return super().eval(x)
 
     def eval_diff(self, diff_order, x):
         if(not isinstance(diff_order, CIndexVec)):
             diff_order = CIndexVec(diff_order)
 
-        if(not isinstance(x, CScalarVec)):
-            x = CScalarVec(x)
+        if(not isinstance(x, CVarScalarVec)):
+            x = CVarScalarVec(x)
 
         return super().eval_diff(diff_order, x)
 
@@ -139,7 +155,7 @@ class CPolyLinkedList(c_invariant_manifold._CPolyLinkedList):
         super().batch_get_data(_coeffs, _orders)
         # print("get_data_finished")
         coeffs = np.array(_coeffs)
-        orders = np.array(_orders, dtype=int).reshape((-1,3))
+        orders = np.array(_orders, dtype=int).reshape((-1,self.dim))
         return (coeffs, orders)
 
     def init_with_data(self, coeff, orders):
@@ -160,7 +176,11 @@ class CPolyLinkedList(c_invariant_manifold._CPolyLinkedList):
         coeffs, orders = self.batch_get_data()
         poly_str = ''
         for j in range(len(coeffs)):
-            poly_str += "+" + "(%s)"%(str(coeffs[j]))
+            if(isinstance(coeffs[j], complex)):
+                coeff_str = str(coeffs[j])
+                poly_str += "+" + "%s"%(coeff_str.replace('j','i'))
+            else:
+                poly_str += "+" + "(%s)"%(str(coeffs[j]))
             for k in range(self.dim):
                 if(orders[j, k] > 1):
                     poly_str += '*(%s**%d)'%(varname[k], orders[j,k])
@@ -200,6 +220,10 @@ class InvariantManifoldSolverPy:
         self.curr_poly = [[]] * 3
         self.curr_poly_raw = [[]] * 3
         self.scale_factor = 1.0
+
+    def __del__(self):
+        del(self.c_solver)
+        
 
     def init_without_T(self, P, lam):
         self.c_solver.init_without_T(P, lam)
@@ -274,7 +298,7 @@ class InvariantManifoldSolverPy:
         # clear and append
         self.clear_all()
         for val_id in range(self.phys_dim):
-            F_poly[var_id].scalar_mul_self(self.scale_factor)
+            F_poly[val_id].scalar_mul_self(self.scale_factor)
             curr_coeffs, curr_orders = F_poly[val_id].batch_get_data()
             for term_id in range(len(curr_coeffs)):
                 self.add_term_F(val_id, CIndexVec(curr_orders[term_id, :]), curr_coeffs[term_id])
@@ -452,11 +476,11 @@ class InvariantManifoldSolverPy:
             curr_W = np.zeros((self.phys_dim,), dtype = complex)
             curr_DW = np.zeros((self.phys_dim, self.manifold_dim), dtype=complex)
             for k in range(self.phys_dim):
-                curr_W[k] = self.curr_poly[POLY_W][k].eval(CScalarVec(curr_s))
+                curr_W[k] = self.curr_poly[POLY_W][k].eval(CVarScalarVec(curr_s))
                 for m in range(self.manifold_dim):
                     diff_order = CIndexVec([0]*self.manifold_dim)
                     diff_order[m] = 1
-                    curr_DW[k,m] = self.curr_poly[POLY_W][k].eval_diff(diff_order, CScalarVec(curr_s))
+                    curr_DW[k,m] = self.curr_poly[POLY_W][k].eval_diff(diff_order, CVarScalarVec(curr_s))
 
             # get tangent vector
             tan_vec = self.tangent_vector(curr_W)

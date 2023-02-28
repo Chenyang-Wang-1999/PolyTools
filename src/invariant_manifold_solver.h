@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-21
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 
 #ifndef INVARIANT_MANIFOLD_SOLVER_H
@@ -90,7 +90,7 @@ public:
     IndexType get_poly_val_or_var_dim(IndexType which_poly, bool is_var);
 
     // evaluation
-    EigenMatrixX eval(IndexType which_poly, EigenMatrixX x_arr);
+    EigenVarMatrixX eval(IndexType which_poly, EigenVarMatrixX x_arr);
 
     // get poly as linked list
     void get_poly(IndexType which_poly, PolyLinkedList & data_poly, IndexType val_id);

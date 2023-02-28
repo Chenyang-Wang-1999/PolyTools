@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-18
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 
 #include "../src/polys.h"
@@ -205,7 +205,7 @@ int main()
 
 
     term_ptr = g.pop_first_term();
-    term_ptr -> ~PolyTerm();
+    delete term_ptr;
     term_ptr = g.pop_first_term();
     f.add_term(term_ptr);
     f.print_info();

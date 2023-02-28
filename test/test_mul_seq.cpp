@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-21
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 
 #include "test_common.h"
@@ -40,7 +40,7 @@ int main()
 
     for(IndexType homog_id = 0; homog_id < n_seq ; homog_id ++)
     {
-        homog_seq[homog_id] -> ~Homogen();
+        delete homog_seq[homog_id];
     }
     return 0;
 }

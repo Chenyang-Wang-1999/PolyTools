@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-20
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 
 #include "test_common.h"
@@ -23,7 +23,7 @@ int main()
     PolyTerm* curr_term = sweeper.first_term();
     STDOUT << "First term:\n";
     curr_term -> print_info();
-    curr_term -> ~PolyTerm();
+    delete curr_term;
     while(! sweeper.is_finished())
     {
         sweeper.print_stack();
@@ -37,10 +37,10 @@ int main()
         {
             STDOUT << "poped term:\n";
             curr_term -> print_info();
-            curr_term -> ~PolyTerm();
+            delete curr_term;
         }
     }
-    f.~Homogen();
-    g.~Homogen();
+    delete f;
+    delete g;
     return 0;
 }

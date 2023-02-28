@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-19
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 
 #ifndef LINKLIST_TOOLS_HPP
@@ -18,12 +18,12 @@ void destroy_tree(NodeType * node_ptr)
     {
         if(node_ptr->next == NULL)
         {
-            node_ptr->~NodeType();
+            delete node_ptr;
         }
         else
         {
             destroy_tree(node_ptr->next);
-            node_ptr->~NodeType();
+            delete node_ptr;
         }
     }
 }

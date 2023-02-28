@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-18
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 
 #ifndef POLYS_H
@@ -32,10 +32,10 @@ public:
         }
     }
 
-    ~Monomial()
-    {
-        _order_var.clear();
-    }
+    // ~Monomial()
+    // {
+    //     _order_var.clear();
+    // }
     IndexType order; // total order of the monomial
     IndexType dim;  // dimension of the variable 
     Scalar coeff;   // coefficient
@@ -43,7 +43,7 @@ public:
 
     /* Mathematics */
     // evaluation
-    Scalar eval(ScalarVec & x);
+    VarScalar eval(VarScalarVec & x);
 
     // monomial product
     Monomial operator*(Monomial monomial_another);
@@ -110,7 +110,7 @@ public:
 void polyterm_turn_neg(PolyTerm * term);
 void polyterm_scalar_mul(PolyTerm * term, Scalar * k);
 void polyterm_print_info(PolyTerm * term);
-void polyterm_accumulate_eval(PolyTerm *term, ScalarVec * x_and_res);
+void polyterm_accumulate_eval(PolyTerm *term, VarScalarVec * x_and_res);
 void polyterm_scale_term(PolyTerm * term, ScalarVec * scale_factor);
 
 /* Tools for homogen multiplication */
@@ -289,7 +289,7 @@ public:
     }
 
     /* Evaluation */
-    Scalar eval(const ScalarVec & x)
+    VarScalar eval(const VarScalarVec & x)
     {
         IndexVec diff_order(dim);
         for(auto it = diff_order.begin(); it != diff_order.end(); it++)
@@ -299,7 +299,7 @@ public:
         return eval_diff(diff_order, x);
     }
 
-    Scalar eval_diff(const IndexVec & diff_order, const ScalarVec & x)
+    VarScalar eval_diff(const IndexVec & diff_order, const VarScalarVec & x)
     {
         return eval_diff_variable(diff_order, x, term_tree, NULL, 0);
     }
@@ -308,13 +308,13 @@ public:
     /* batch operation */
 
     // evaluation
-    EigenVectorX batch_eval(const IndexVec & diff_order, const EigenMatrixX x)
+    EigenVarVectorX batch_eval(const IndexVec & diff_order, const EigenVarMatrixX x)
     {
         assert(dim == x.rows());
-        EigenVectorX result_vec(x.cols());
+        EigenVarVectorX result_vec(x.cols());
         for(IndexType col_id = 0; col_id < x.cols(); col_id ++)
         {
-            ScalarVec curr_col(x.col(col_id).data(), x.col(col_id).data() + dim);
+            VarScalarVec curr_col(x.col(col_id).data(), x.col(col_id).data() + dim);
             result_vec(col_id) = eval_diff(diff_order, curr_col);
         }
         return result_vec;
@@ -400,7 +400,7 @@ public:
     }
 
 private:
-    Scalar eval_diff_variable(const IndexVec & diff_order, const ScalarVec & x, 
+    VarScalar eval_diff_variable(const IndexVec & diff_order, const VarScalarVec & x, 
                 PolyTerm* start_ptr, PolyTerm* end_ptr, IndexType var_id);
 
 };
@@ -601,7 +601,7 @@ public:
     ~Series(){
         for(IndexType k=0; k<Kmax; k++)
         {
-            homogen_terms[k] -> ~Homogen();
+            delete homogen_terms[k];
         }
         homogen_terms.clear();
     }
@@ -646,7 +646,7 @@ public:
         }
     }
     void derivative(IndexType var_id, Series & res);
-    Scalar eval(const ScalarVec & x);
+    VarScalar eval(const VarScalarVec & x);
     std::vector<Homogen*> homogen_terms;
 };
 
@@ -678,7 +678,7 @@ public:
     {
         for(auto it = series_vec.begin(); it != series_vec.end(); it ++)
         {
-            (*it) -> ~Series();
+            delete (*it);
         }
         series_vec.clear();
     }
@@ -725,7 +725,7 @@ public:
     {
         for(auto it = homog_vec.begin(); it != homog_vec.end(); it ++)
         {
-            (*it) -> ~Homogen();
+            delete (*it);
         }
         homog_vec.clear();
     }
@@ -791,14 +791,14 @@ public:
     {
         curr_k = 1;
         assert(series_w->homogen_terms[0]->term_tree == NULL);
-        series_vec[0] -> ~Series();
+        delete series_vec[0];
         series_vec[0] = series_w;
     }
     ~SeriesPowerSeq()
     {
         for(auto it = series_vec.begin() + 1; it != series_vec.end(); it ++)
         {
-            (*it) -> ~Series();
+            delete (*it);
         }
         series_vec.clear();
     }

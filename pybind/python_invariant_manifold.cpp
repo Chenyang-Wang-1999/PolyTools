@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-22
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 
 #include "../src/basic_defs.h"
@@ -16,10 +16,23 @@ namespace py=pybind11;
 PYBIND11_MAKE_OPAQUE(IndexVec);
 PYBIND11_MAKE_OPAQUE(ScalarVec);
 
-PYBIND11_MODULE(_invariant_manifold, m)
+#if SCALAR_MODE == 1
+    PYBIND11_MAKE_OPAQUE(VarScalarVec);
+#endif 
+
+#if SCALAR_MODE == 0
+PYBIND11_MODULE(_invariant_manifold_cc, m)
+#elif SCALAR_MODE == 1
+PYBIND11_MODULE(_invariant_manifold_rc, m)
+#else
+PYBIND11_MODULE(_invariant_manifold_rr, m)
+#endif
 {
     py::bind_vector<IndexVec>(m, "CIndexVec");
     py::bind_vector<ScalarVec>(m, "CScalarVec");
+    #if SCALAR_MODE == 1
+        py::bind_vector<VarScalarVec>(m, "CVarScalarVec");
+    #endif
     py::class_<PolyLinkedList>(m, "_CPolyLinkedList")
         .def(py::init<IndexType>())
         .def("reinit", &PolyLinkedList::reinit)
