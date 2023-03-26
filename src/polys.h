@@ -138,6 +138,10 @@ public:
         n_terms = 0;
         term_tree = NULL;
     };
+    PolyLinkedList(IndexType dim)
+    {
+        PolyLinkedList(dim, true);
+    }
     PolyLinkedList(std::vector<Monomial> & monomial_vec);
     ~PolyLinkedList()
     {
@@ -421,8 +425,11 @@ class Homogen: public PolyLinkedList
 {
 public:
     IndexType order;
-    Homogen(IndexType dim, bool increasing_order,  IndexType order)
+    Homogen(IndexType dim, IndexType order, bool increasing_order)
         :PolyLinkedList(dim, increasing_order), order(order){
+    };
+    Homogen(IndexType dim, IndexType order)
+        :PolyLinkedList(dim), order(order){
     };
     Homogen(std::vector<Monomial> & monomial_vec): PolyLinkedList(monomial_vec){};
 
@@ -430,6 +437,10 @@ public:
     void reinit(IndexType dim, IndexType order, bool increasing_order)
     {
         this->order = order;
+        PolyLinkedList::reinit(dim, increasing_order);
+    }
+    void reinit(IndexType dim, bool increasing_order)
+    {
         PolyLinkedList::reinit(dim, increasing_order);
     }
 
@@ -614,6 +625,10 @@ public:
         curr_kmin = Kmax;
         curr_kmax = 0;
     }
+    Series(IndexType Kmax, IndexType dim)
+    {
+        Series(Kmax, dim, true);
+    }
     ~Series(){
         for(IndexType k=0; k<Kmax; k++)
         {
@@ -682,7 +697,7 @@ public:
     std::vector<Series*> series_vec;
 
     SeriesVec(IndexType var_dim, IndexType val_dim, IndexType Kmax, bool increasing_order):
-        var_dim(var_dim), val_dim(val_dim), Kmax(Kmax)
+        var_dim(var_dim), val_dim(val_dim), Kmax(Kmax), increasing_order(increasing_order)
         {
             series_vec.resize(val_dim);
             for(auto it = series_vec.begin(); it!= series_vec.end(); it++)
@@ -690,6 +705,10 @@ public:
                 (*it) = new Series(Kmax, var_dim, increasing_order);
             }
         }
+    SeriesVec(IndexType var_dim, IndexType val_dim, IndexType Kmax)
+    {
+        SeriesVec(var_dim, val_dim, Kmax, true);
+    }
     
     ~SeriesVec()
     {
@@ -729,7 +748,7 @@ public:
     bool increasing_order;
     std::vector<Homogen*> homog_vec;
 
-    HomogenVec(IndexType var_dim, IndexType val_dim, IndexType order):
+    HomogenVec(IndexType var_dim, IndexType val_dim, IndexType order, bool increasing_order):
         var_dim(var_dim), val_dim(val_dim), order(order), increasing_order(increasing_order)
         {
             homog_vec.resize(val_dim);
@@ -739,6 +758,10 @@ public:
             }
         }
     
+    HomogenVec(IndexType var_dim, IndexType val_dim, IndexType order)
+    {
+        HomogenVec(var_dim, val_dim, order, true);
+    }
     ~HomogenVec()
     {
         for(auto it = homog_vec.begin(); it != homog_vec.end(); it ++)
@@ -804,7 +827,7 @@ class SeriesPowerSeq: public SeriesVec
 public:
     IndexType curr_k;  // current k for all ws
     
-    SeriesPowerSeq(IndexType max_order, IndexType Kmax, Series * series_w):
+    SeriesPowerSeq(IndexType max_order, IndexType Kmax, Series * series_w, bool increasing_order):
         SeriesVec(series_w->dim, int_log2(max_order), Kmax, increasing_order)
     {
         curr_k = 1;
@@ -812,6 +835,16 @@ public:
         delete series_vec[0];
         series_vec[0] = series_w;
     }
+
+    SeriesPowerSeq(IndexType max_order, IndexType Kmax, Series * series_w):
+            SeriesVec(series_w->dim, int_log2(max_order), Kmax)
+    {
+        curr_k = 1;
+        assert(series_w->homogen_terms[0]->term_tree == NULL);
+        delete series_vec[0];
+        series_vec[0] = series_w;
+    }
+
     ~SeriesPowerSeq()
     {
         for(auto it = series_vec.begin() + 1; it != series_vec.end(); it ++)

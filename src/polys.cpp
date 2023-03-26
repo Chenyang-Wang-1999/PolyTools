@@ -517,7 +517,7 @@ void PolyLinkedList::add_term(PolyTerm * new_term)
 
     // 1 check the first term
     res = new_term->comp(*term_tree);
-    if(res == (increasing_order)?LT:GT)
+    if(res == ((increasing_order)?LT:GT))
     {
         insert_at_head(new_term);
         return;
@@ -541,7 +541,7 @@ void PolyLinkedList::add_term(PolyTerm * new_term)
     while(curr_ptr->next != NULL)
     {
         res = new_term->comp(*(curr_ptr->next));
-        if(res == (increasing_order)?LT:GT)
+        if(res == ((increasing_order)?LT:GT))
         {
             add_term_after_ptr(curr_ptr, new_term);
             return;
@@ -594,7 +594,7 @@ void PolyLinkedList::destructive_add_self(PolyLinkedList & another)
         if(is_first_term)
         {
             CompareResult res = term_tree ->comp(*another.term_tree);
-            if(res == (increasing_order)?LT:GT)
+            if(res == ((increasing_order)?LT:GT))
             {
                 is_first_term = false;
                 LHS_ptr = term_tree;
@@ -639,7 +639,7 @@ void PolyLinkedList::destructive_add_self(PolyLinkedList & another)
             {
 
                 CompareResult res = LHS_ptr->next ->comp(*another.term_tree);
-                if(res == (increasing_order)?LT:GT)
+                if(res == ((increasing_order)?LT:GT))
                 {
                     LHS_ptr = LHS_ptr->next;
                 }
@@ -780,7 +780,7 @@ void PolyLinkedList::destructive_add(PolyLinkedList & another, PolyLinkedList & 
         {
             // both LHS and RHS has content
             CompareResult res = term_tree -> comp(*(another.term_tree));
-            if(res == (increasing_order)?LT:GT)
+            if(res == ((increasing_order)?LT:GT))
             {
                 new_term_ptr = pop_first_term();
             }
@@ -1012,7 +1012,9 @@ void Homogen::derivative(IndexType var_id, Homogen & res)
 void homogen_multiplication(const Homogen & f, const Homogen & g, Homogen & h)
 {
     assert(f.dim == g.dim);
-    assert(f.increasing_order == g.increasing_order);
+    assert(f.increasing_order);
+    assert(g.increasing_order);
+    // assert(f.increasing_order == g.increasing_order);
 
     // total order  = f.order + g.order, dim = f.dim
     h.reinit(f.dim, f.order + g.order, f.increasing_order);
@@ -1159,10 +1161,11 @@ void Series::derivative(IndexType var_id, Series & res)
 void series_mul(Series & f, Series & g, IndexType k, Homogen& res)
 {
     assert(f.dim == g.dim);
-    res.reinit(f.dim, k);
+    assert(f.increasing_order == g.increasing_order);
+    res.reinit(f.dim, k, f.increasing_order);
 
     // Sweep the all combinations with total order k
-    Homogen current_mul(f.dim, k);
+    Homogen current_mul(f.dim, k, f.increasing_order);
     for(IndexType k_f = f.curr_kmin; (k_f <= k && k_f < f.curr_kmax); k_f ++)
     {
         IndexType k_g = k - k_f;
@@ -1190,7 +1193,7 @@ void series_mul(Series & f, Series & g, IndexType k, Homogen& res)
 void term_comp(Monomial & f, std::vector<Series*> & series_vec, IndexType k, Homogen& res)
 {
     assert(f.dim == series_vec.size());
-    res.reinit(series_vec[0]->dim, k);
+    res.reinit(series_vec[0]->dim, k, series_vec[0]->increasing_order);
 
     if(f.order == 1)
     {
@@ -1198,7 +1201,7 @@ void term_comp(Monomial & f, std::vector<Series*> & series_vec, IndexType k, Hom
         {
             if(f.var_order(var_id) == 1)
             {
-                Homogen homog_temp(series_vec[0]->dim, k);
+                Homogen homog_temp(series_vec[0]->dim, k, series_vec[0]->increasing_order);
                 series_vec[var_id] -> homogen_terms[k] -> scalar_mul(f.coeff, homog_temp);
                 res.destructive_add_self(homog_temp);
                 return;
@@ -1244,7 +1247,7 @@ void term_comp(Monomial & f, std::vector<Series*> & series_vec, IndexType k, Hom
         return;
     }
 
-    Homogen homog_temp(series_vec[0]->dim, k);
+    Homogen homog_temp(series_vec[0]->dim, k, series_vec[0]->increasing_order);
     do
     {
         // sweep combinations
@@ -1289,8 +1292,9 @@ void series_comp(Series &f, std::vector<Series*> & series_vec, IndexType k, Homo
 {
 
     assert(f.dim == series_vec.size());
-    res.reinit(series_vec[0]->dim, k);
-    Homogen curr_result(series_vec[0]->dim, k);
+    assert(f.increasing_order == series_vec[0]->increasing_order);
+    res.reinit(series_vec[0]->dim, k, series_vec[0]->increasing_order);
+    Homogen curr_result(series_vec[0]->dim, k, f.increasing_order);
 
     for(IndexType f_k = 0; f_k < f.Kmax; f_k ++)
     {
@@ -1311,8 +1315,9 @@ void series_DW_dot_f(Series & W, std::vector<Series*> & f_vec, IndexType k, Homo
 {
     assert(W.dim == f_vec.size());
     assert(W.dim == f_vec[0]->dim);
+    assert(W.increasing_order == f_vec[0]->increasing_order);
 
-    res.reinit(W.dim, k);
+    res.reinit(W.dim, k, W.increasing_order);
 
     // for each var_id, add them together
     for(IndexType var_id = 0; var_id < W.dim; var_id ++)
@@ -1321,8 +1326,8 @@ void series_DW_dot_f(Series & W, std::vector<Series*> & f_vec, IndexType k, Homo
         for(IndexType k_W = 1; k_W <= k+1; k_W++)
         {
             IndexType k_f = k + 1 - k_W;
-            Homogen dWdxi(W.dim, k_W - 1);
-            Homogen temp_mul(W.dim, k);
+            Homogen dWdxi(W.dim, k_W - 1, W.increasing_order);
+            Homogen temp_mul(W.dim, k, W.increasing_order);
             W.homogen_terms[k_W]->derivative(var_id, dWdxi);
             homogen_multiplication(dWdxi, *(f_vec[var_id]->homogen_terms[k_f]), temp_mul);
             res.destructive_add_self(temp_mul);
@@ -1361,7 +1366,7 @@ void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> sca
     assert(input_series.var_dim == output_series.var_dim);
 
     output_series.reinit();
-    Homogen temp_homogen(input_series.var_dim, input_series.order);
+    Homogen temp_homogen(input_series.var_dim, input_series.order, input_series.increasing_order);
     // for each row
     for(IndexType row_id = 0; row_id < scalar_matrix.rows(); row_id ++)
     {
@@ -1383,7 +1388,7 @@ void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> sca
     assert(input_series[0]->dim == output_series.var_dim);
 
     output_series.reinit();
-    Homogen temp_homogen(output_series.var_dim, input_series[0] -> order);
+    Homogen temp_homogen(output_series.var_dim, input_series[0] -> order, input_series[0]->increasing_order);
     // for each row
     for(IndexType row_id = 0; row_id < scalar_matrix.rows(); row_id ++)
     {
@@ -1420,7 +1425,7 @@ void series_renew_xqr_term(const Series & x, Series & x_sqr, IndexType next_k)
     {
         return;
     }
-    Homogen new_term(x_sqr.dim, next_k);
+    Homogen new_term(x_sqr.dim, next_k, x_sqr.increasing_order);
     series_renew_xqr_term(x, new_term, next_k);
     x_sqr.destructive_add_homogen(new_term);
 }
@@ -1434,7 +1439,7 @@ void series_renew_xqr_term(const Series & x, Homogen & x_sqr_k, IndexType next_k
         return;
     }
 
-    x_sqr_k.reinit(x.dim, next_k);
+    x_sqr_k.reinit(x.dim, next_k, x.increasing_order);
     if(next_k % 2 == 1)
     {
         for(IndexType j = x.curr_kmin; 2*j + 1 <= next_k; j++)
@@ -1452,7 +1457,7 @@ void series_renew_xqr_term(const Series & x, Homogen & x_sqr_k, IndexType next_k
             {
                 break;
             }
-            Homogen curr_homog(x.dim, next_k);
+            Homogen curr_homog(x.dim, next_k, x.increasing_order);
             homogen_multiplication(*(x.homogen_terms[j]), *(x.homogen_terms[next_k - j]), curr_homog);
             x_sqr_k.destructive_add_self(curr_homog);
         }
@@ -1475,14 +1480,14 @@ void series_renew_xqr_term(const Series & x, Homogen & x_sqr_k, IndexType next_k
             {
                 break;
             }
-            Homogen curr_homog(x.dim, next_k);
+            Homogen curr_homog(x.dim, next_k, x.increasing_order);
             homogen_multiplication(*(x.homogen_terms[j]), *(x.homogen_terms[next_k - j]), curr_homog);
             x_sqr_k.destructive_add_self(curr_homog);
         }
         x_sqr_k.scalar_mul_self(Scalar(2.0));
 
         // x(k/2)^2 term
-        Homogen x_khalf_sqr(x.dim, next_k);
+        Homogen x_khalf_sqr(x.dim, next_k, x.increasing_order);
         homogen_multiplication(*(x.homogen_terms[next_k/2]), *(x.homogen_terms[next_k/2]), x_khalf_sqr);
         x_sqr_k.destructive_add_self(x_khalf_sqr);
     }
@@ -1536,7 +1541,7 @@ void SeriesPowerSeq::append_pow_ptr(IndexType order, std::vector<Series*> & seri
 void term_comp(Monomial & f, std::vector<SeriesPowerSeq*> & series_seq_vec, IndexType k, Homogen& res)
 {
     assert(f.dim == series_seq_vec.size());
-    res.reinit(series_seq_vec[0]->var_dim, k);
+    res.reinit(series_seq_vec[0]->var_dim, k, series_seq_vec[0]->increasing_order);
 
     // generate series ptr by the power sequences
     std::vector<Series*> series_ptr;
@@ -1587,7 +1592,7 @@ void term_comp(Monomial & f, std::vector<SeriesPowerSeq*> & series_seq_vec, Inde
         return;
     }
 
-    Homogen homog_temp(series_seq_vec[0]->var_dim, k);
+    Homogen homog_temp(series_seq_vec[0]->var_dim, k, series_seq_vec[0]->increasing_order);
     do
     {
         // sweep combinations
@@ -1632,7 +1637,8 @@ void term_comp(Monomial & f, std::vector<SeriesPowerSeq*> & series_seq_vec, Inde
 void series_comp(Series &f, std::vector<SeriesPowerSeq*> & series_seq_vec, IndexType k, Homogen& res)
 {
     assert(f.dim == series_seq_vec.size());
-    res.reinit(series_seq_vec[0]->var_dim, k);
+    assert(f.increasing_order == series_seq_vec[0]->increasing_order);
+    res.reinit(series_seq_vec[0]->var_dim, k, f.increasing_order);
 
     if(f.curr_kmin >= f.curr_kmax)
     {
@@ -1640,7 +1646,7 @@ void series_comp(Series &f, std::vector<SeriesPowerSeq*> & series_seq_vec, Index
         return;
     }
 
-    Homogen curr_result(series_seq_vec[0]->var_dim, k);
+    Homogen curr_result(series_seq_vec[0]->var_dim, k, f.increasing_order);
     for(IndexType f_k = f.curr_kmin; f_k < f.curr_kmax; f_k ++)
     {
         Homogen & curr_homogen = *(f.homogen_terms[f_k]);
@@ -1681,7 +1687,7 @@ void series_to_linklist(Series & poly_series, PolyLinkedList & poly_list)
         {
             PolyTerm* curr_ptr = homog_term_ptrs[(*it)];
             CompareResult res = curr_ptr->comp(*homog_term_ptrs[min_id]);
-            if(res == poly_list.increasing_order?LT:GT)
+            if(res == ((poly_list.increasing_order)?LT:GT))
             {
                 min_id = *it;
             }
