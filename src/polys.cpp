@@ -970,20 +970,10 @@ VarScalar PolyLinkedList::eval_diff_variable(const IndexVec & diff_order, const 
     return val;
 }
 
-/* Homogen */
 // derivative
-void Homogen::derivative(IndexType var_id, Homogen & res)
+void PolyLinkedList::derivative(IndexType var_id, PolyLinkedList & res)
 {
-
-    // if *this is constant, then return zero homogen
-    if(order == 0)
-    {
-        res.reinit(dim, 0, increasing_order);
-        return;
-    }
-
-
-    res.reinit(dim, order - 1, increasing_order);
+    res.reinit(dim, increasing_order);
     PolyTerm * new_term_ptr = NULL;
     PolyTerm * curr_term_ptr = term_tree;
     while(curr_term_ptr != NULL)
@@ -1009,6 +999,9 @@ void Homogen::derivative(IndexType var_id, Homogen & res)
 
 }
 
+
+
+/* Homogen */
 void homogen_multiplication(const Homogen & f, const Homogen & g, Homogen & h)
 {
     assert(f.dim == g.dim);

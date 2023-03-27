@@ -122,6 +122,11 @@ class CPolyLinkedList(c_invariant_manifold._CPolyLinkedList):
         super().subs(another, result)
         return result
 
+    def derivative(self, var_id:int):
+        result = CPolyLinkedList(self.dim)
+        super().derivative(var_id, result)
+        return result
+
     def eval(self, x):
         if(not isinstance(x, CVarScalarVec)):
             x = CVarScalarVec(x)
@@ -188,6 +193,17 @@ class CPolyLinkedList(c_invariant_manifold._CPolyLinkedList):
                     poly_str += '*%s'%(varname[k])
         poly_str += ';'
         return poly_str   
+
+class CMonomial(c_invariant_manifold._Monomial):
+    def __init__(self, coeff, orders) -> None:
+        super().__init__(coeff, CIndexVec(orders))
+
+    def eval(self, x):
+        return super().eval(CVarScalarVec(x))
+
+    def derivative(self, var_id):
+        return super().derivative(var_id) 
+
 
 def poly_load_from_file(fname):
     data = spio.loadmat(fname)

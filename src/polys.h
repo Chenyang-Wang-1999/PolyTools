@@ -138,10 +138,8 @@ public:
         n_terms = 0;
         term_tree = NULL;
     };
-    PolyLinkedList(IndexType dim)
-    {
-        PolyLinkedList(dim, true);
-    }
+    PolyLinkedList(IndexType dim): PolyLinkedList(dim, true)
+    {}
     PolyLinkedList(std::vector<Monomial> & monomial_vec);
     ~PolyLinkedList()
     {
@@ -302,6 +300,8 @@ public:
         another.neg_self();
         destructive_add(another, new_homog);
     }
+
+    void derivative(IndexType var_id, PolyLinkedList & res);
 
     /* Evaluation */
     VarScalar eval(const VarScalarVec & x)
@@ -564,7 +564,19 @@ public:
     }
 
     // // derivative
-    void derivative(IndexType var_id, Homogen & res);
+    void derivative(IndexType var_id, Homogen & res)
+    {
+        if(order == 0)
+        {
+            res.reinit(dim,0, increasing_order);
+            return;
+        }
+        else
+        {
+            res.reinit(dim,order-1, increasing_order);
+            PolyLinkedList::derivative(var_id, res);
+        }
+    }
 };
 
 class PolyMulSweeper
