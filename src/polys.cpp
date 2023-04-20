@@ -369,7 +369,7 @@ PolyTerm* PolyMulSweeper::next_term()
         }
 
         // check zero. If zero, destroy the ptr and return NULL
-        if(ABS_FUN(first_ptr->coeff) * pow(8.0, first_ptr->order) < EPS)
+        if(ABS_FUN(first_ptr->coeff) * pow(EXP_BASE, first_ptr->order) < EPS)
         {
             delete first_ptr;
             return NULL;
@@ -502,7 +502,7 @@ void PolyLinkedList::copy_call(void (*funcall)(PolyTerm *), PolyLinkedList & new
 void PolyLinkedList::add_term(PolyTerm * new_term)
 {
     assert(new_term != NULL);
-    if(ABS_FUN(new_term->coeff) * pow(8.0, new_term->order) < EPS)
+    if(ABS_FUN(new_term->coeff) * pow(EXP_BASE, new_term->order) < EPS)
     {
         delete new_term;
         return;
@@ -525,7 +525,7 @@ void PolyLinkedList::add_term(PolyTerm * new_term)
     else if (res == EQ)
     {
         term_tree -> coeff += new_term ->coeff;
-        if(ABS_FUN(term_tree->coeff) * pow(8.0, term_tree->order) < EPS)
+        if(ABS_FUN(term_tree->coeff) * pow(EXP_BASE, term_tree->order) < EPS)
         {
             PolyTerm * junk_ptr =  pop_first_term();
             delete junk_ptr;
@@ -550,7 +550,7 @@ void PolyLinkedList::add_term(PolyTerm * new_term)
         {
             curr_ptr->next->coeff += new_term -> coeff;
             delete new_term;
-            if(ABS_FUN(curr_ptr->next->coeff) * pow(8.0, curr_ptr->next->order) < EPS)
+            if(ABS_FUN(curr_ptr->next->coeff) * pow(EXP_BASE, curr_ptr->next->order) < EPS)
             {
                 PolyTerm* junk_ptr =  pop_next_term(curr_ptr);
                 delete junk_ptr;
@@ -604,7 +604,7 @@ void PolyLinkedList::destructive_add_self(PolyLinkedList & another)
                 new_term_ptr = another.pop_first_term();
                 LHS_ptr->coeff += new_term_ptr->coeff;
                 delete new_term_ptr;
-                if(ABS_FUN(LHS_ptr->coeff) * pow(8.0, LHS_ptr->order) < EPS)
+                if(ABS_FUN(LHS_ptr->coeff) * pow(EXP_BASE, LHS_ptr->order) < EPS)
                 {
                     PolyTerm * junk_ptr = pop_first_term();
                     delete junk_ptr;
@@ -648,7 +648,7 @@ void PolyLinkedList::destructive_add_self(PolyLinkedList & another)
                     new_term_ptr = another.pop_first_term();
                     LHS_ptr->next->coeff += new_term_ptr->coeff;
                     delete new_term_ptr;
-                    if(ABS_FUN(LHS_ptr->next->coeff) * pow(8.0, LHS_ptr->next->order) < EPS)
+                    if(ABS_FUN(LHS_ptr->next->coeff) * pow(EXP_BASE, LHS_ptr->next->order) < EPS)
                     {
                         PolyTerm * junk_ptr = pop_next_term(LHS_ptr);
                         delete junk_ptr;
@@ -677,7 +677,7 @@ void PolyLinkedList::remove_zeros()
     // remove iterms at term_tree
     while(term_tree != NULL)
     {
-        if(ABS_FUN(term_tree->coeff) * pow(8.0, term_tree->order) < EPS )
+        if(ABS_FUN(term_tree->coeff) * pow(EXP_BASE, term_tree->order) < EPS )
         {
             PolyTerm * junk_ptr = pop_first_term();
             delete junk_ptr;
@@ -695,7 +695,47 @@ void PolyLinkedList::remove_zeros()
     PolyTerm* curr_ptr = term_tree;
     while(curr_ptr->next != NULL)
     {
-        if(ABS_FUN(curr_ptr->next->coeff * pow(8.0, curr_ptr->next->order))<EPS)
+        if(ABS_FUN(curr_ptr->next->coeff * pow(EXP_BASE, curr_ptr->next->order))<EPS)
+        {
+            PolyTerm * junk_ptr = pop_next_term(curr_ptr);
+            delete junk_ptr;
+        }
+        else
+        {
+            curr_ptr = curr_ptr->next;
+        }
+    }
+}
+
+void PolyLinkedList::remove_zeros_with_tol(double tol, double exp_base)
+{
+    if(term_tree == NULL)
+    {
+        return;
+    }
+    
+    // remove iterms at term_tree
+    while(term_tree != NULL)
+    {
+        if(ABS_FUN(term_tree->coeff) * pow(exp_base, term_tree->order) < tol )
+        {
+            PolyTerm * junk_ptr = pop_first_term();
+            delete junk_ptr;
+        }
+        else
+        {
+            break;
+        }
+    }
+    if(term_tree == NULL)
+    {
+        return;
+    }
+
+    PolyTerm* curr_ptr = term_tree;
+    while(curr_ptr->next != NULL)
+    {
+        if(ABS_FUN(curr_ptr->next->coeff * pow(exp_base, curr_ptr->next->order))<tol)
         {
             PolyTerm * junk_ptr = pop_next_term(curr_ptr);
             delete junk_ptr;
@@ -799,7 +839,7 @@ void PolyLinkedList::destructive_add(PolyLinkedList & another, PolyLinkedList & 
             // Insert to new 
             if(insert_pos_ptr==NULL)
             {
-                if(ABS_FUN(new_term_ptr->coeff) * pow(8.0, new_term_ptr->order) > EPS)
+                if(ABS_FUN(new_term_ptr->coeff) * pow(EXP_BASE, new_term_ptr->order) > EPS)
                 {
                     new_homog.insert_at_head(new_term_ptr);
                 }
@@ -811,7 +851,7 @@ void PolyLinkedList::destructive_add(PolyLinkedList & another, PolyLinkedList & 
             }
             else
             {
-                if(ABS_FUN(new_term_ptr->coeff) * pow(8.0, new_term_ptr->order) > EPS)
+                if(ABS_FUN(new_term_ptr->coeff) * pow(EXP_BASE, new_term_ptr->order) > EPS)
                 {
                     new_homog.add_term_after_ptr(insert_pos_ptr, new_term_ptr);
                 }
@@ -979,7 +1019,7 @@ void PolyLinkedList::derivative(IndexType var_id, PolyLinkedList & res)
     while(curr_term_ptr != NULL)
     {
         Monomial term_der = curr_term_ptr->derivative(var_id);
-        if(ABS_FUN(term_der.coeff) * pow(8.0, term_der.order)>EPS)
+        if(ABS_FUN(term_der.coeff) * pow(EXP_BASE, term_der.order)>EPS)
         {
             PolyTerm* new_term = new PolyTerm(term_der);
             if(res.n_terms == 0)

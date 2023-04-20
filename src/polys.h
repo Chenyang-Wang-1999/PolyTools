@@ -157,6 +157,7 @@ public:
     }
 
     void remove_zeros();
+    void remove_zeros_with_tol(double tol, double exp_base);
     void copy(PolyLinkedList &);
     void copy_call(void (*funcall)(PolyTerm*), PolyLinkedList &);
     
@@ -637,10 +638,8 @@ public:
         curr_kmin = Kmax;
         curr_kmax = 0;
     }
-    Series(IndexType Kmax, IndexType dim)
-    {
-        Series(Kmax, dim, true);
-    }
+    Series(IndexType Kmax, IndexType dim):
+        Series(Kmax, dim, true){}
     ~Series(){
         for(IndexType k=0; k<Kmax; k++)
         {
@@ -717,10 +716,8 @@ public:
                 (*it) = new Series(Kmax, var_dim, increasing_order);
             }
         }
-    SeriesVec(IndexType var_dim, IndexType val_dim, IndexType Kmax)
-    {
-        SeriesVec(var_dim, val_dim, Kmax, true);
-    }
+    SeriesVec(IndexType var_dim, IndexType val_dim, IndexType Kmax):
+        SeriesVec(var_dim, val_dim, Kmax, true){}
     
     ~SeriesVec()
     {
@@ -770,10 +767,8 @@ public:
             }
         }
     
-    HomogenVec(IndexType var_dim, IndexType val_dim, IndexType order)
-    {
-        HomogenVec(var_dim, val_dim, order, true);
-    }
+    HomogenVec(IndexType var_dim, IndexType val_dim, IndexType order):
+        HomogenVec(var_dim, val_dim, order, true){}
     ~HomogenVec()
     {
         for(auto it = homog_vec.begin(); it != homog_vec.end(); it ++)

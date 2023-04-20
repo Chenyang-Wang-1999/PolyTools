@@ -43,6 +43,7 @@ typedef Eigen::Matrix<VarScalar, Eigen::Dynamic, 1> EigenVarVectorX;
 #define STDOUT std::cout
 #define STDERR std::cerr
 #define EPS 1e-16
+#define EXP_BASE 1
 #define ABS_FUN abs
 
 #endif

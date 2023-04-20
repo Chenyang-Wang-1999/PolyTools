@@ -182,8 +182,9 @@ class CPolyLinkedList(c_invariant_manifold._CPolyLinkedList):
         poly_str = ''
         for j in range(len(coeffs)):
             if(isinstance(coeffs[j], complex)):
-                coeff_str = str(coeffs[j])
-                poly_str += "+" + "%s"%(coeff_str.replace('j','i'))
+                # coeff_str = str(coeffs[j])
+                # poly_str += "+" + "%s"%(coeff_str.replace('j','i'))
+                poly_str += "+" + "(%+.18e%+.18e*i)"%(coeffs[j].real, coeffs[j].imag)
             else:
                 poly_str += "+" + "(%s)"%(str(coeffs[j]))
             for k in range(self.dim):

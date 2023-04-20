@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-21
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 
 #include "../src/poly_utils.h"
@@ -10,9 +10,9 @@
 
 int main()
 {
-    IndexType total_sum = 50;
+    IndexType total_sum = 0;
     IndexVec sep_vec = {0,0,0,0,0}, index_vec(4);
-    IndexVec ball_min = {1,1,1,1}, ball_max = {30, 30, 30, 30};
+    IndexVec ball_min = {0,0,0,1}, ball_max = {30, 30, 30, 30};
 
     boards_left_most(sep_vec, 0, ball_min, ball_max, total_sum);
 
