@@ -66,6 +66,7 @@ void cJetTransport::set_sol_by_scalars(ScalarVec & coeffs, IndexType err_order)
                 }
              }
             sol.series_vec[var_id] -> homogen_terms[curr_order]->init_with_data(sol_coeffs, sol_indices);
+            sol.series_vec[var_id] ->update_order_bound(curr_order);
         }
     }
 }
@@ -167,6 +168,7 @@ void cJetTransport::calculate_dvars(IndexType err_order)
         for(IndexType curr_order=0; curr_order<err_order; curr_order++)
         {
             series_comp(*(ode_fun.series_vec[var_id]), all_series, curr_order, *(dvars.series_vec[var_id]->homogen_terms[curr_order]));
+            dvars.series_vec[var_id] -> update_order_bound(curr_order);
         }
     }
 

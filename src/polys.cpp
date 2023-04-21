@@ -1228,6 +1228,24 @@ void term_comp(Monomial & f, std::vector<Series*> & series_vec, IndexType k, Hom
     assert(f.dim == series_vec.size());
     res.reinit(series_vec[0]->dim, k, series_vec[0]->increasing_order);
 
+    if(f.order == 0)
+    {
+        if(k > 0)
+        {
+            return;
+        }
+        else
+        {
+            IndexVec new_term_orders(series_vec[0]->dim);
+            for(auto it = new_term_orders.begin(); it!=new_term_orders.end(); it++)
+            {
+                (*it) = 0;
+            }
+            res.add_term(Monomial(f.coeff, new_term_orders));
+            return;
+        }
+    }
+
     if(f.order == 1)
     {
         for(IndexType var_id = 0; var_id < f.dim; var_id ++)
@@ -1327,9 +1345,14 @@ void series_comp(Series &f, std::vector<Series*> & series_vec, IndexType k, Homo
     assert(f.dim == series_vec.size());
     assert(f.increasing_order == series_vec[0]->increasing_order);
     res.reinit(series_vec[0]->dim, k, series_vec[0]->increasing_order);
+    if(f.curr_kmin >= f.curr_kmax)
+    {
+        return;
+    }
+
     Homogen curr_result(series_vec[0]->dim, k, f.increasing_order);
 
-    for(IndexType f_k = 0; f_k < f.Kmax; f_k ++)
+    for(IndexType f_k = f.curr_kmin; f_k < f.curr_kmax; f_k ++)
     {
         Homogen & curr_homogen = *f.homogen_terms[f_k];
         PolyTerm * curr_term = curr_homogen.term_tree;
@@ -1575,6 +1598,24 @@ void term_comp(Monomial & f, std::vector<SeriesPowerSeq*> & series_seq_vec, Inde
 {
     assert(f.dim == series_seq_vec.size());
     res.reinit(series_seq_vec[0]->var_dim, k, series_seq_vec[0]->increasing_order);
+
+    if(f.order == 0)
+    {
+        if(k > 0)
+        {
+            return;
+        }
+        else
+        {
+            IndexVec new_term_orders(series_seq_vec[0]->var_dim);
+            for(auto it = new_term_orders.begin(); it!=new_term_orders.end(); it++)
+            {
+                (*it) = 0;
+            }
+            res.add_term(Monomial(f.coeff, new_term_orders));
+            return;
+        }
+    }
 
     // generate series ptr by the power sequences
     std::vector<Series*> series_ptr;

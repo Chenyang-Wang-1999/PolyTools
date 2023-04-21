@@ -137,16 +137,17 @@ def test_conversion_coeffs2():
 
 def test_calculate_dvars():
     coeffs0 = jet.CScalarVec([
-        -1, 2, 1
+        -1, 2, 1, 2
     ])
     orders0 = jet.CIndexVec([
         1,0,0,0, 
         0,1,0,0,
-        1,0,1,0
+        1,0,1,0,
+        0,0,0,0
     ])
     poly0 = jet.CPolyLinkedList(4)
     poly0.batch_add_elements(coeffs0, orders0)
-    poly0.print_info()
+    print(poly0.to_str(['x','y','z','lam']))
     print()
 
     coeffs1 = jet.CScalarVec([
@@ -158,7 +159,7 @@ def test_calculate_dvars():
     ])
     poly1 = jet.CPolyLinkedList(4)
     poly1.batch_add_elements(coeffs1, orders1)
-    poly1.print_info()
+    print(poly1.to_str(['x','y','z','lam']))
     print()
 
     coeffs2 = jet.CScalarVec([
@@ -172,7 +173,7 @@ def test_calculate_dvars():
     ])
     poly2 = jet.CPolyLinkedList(4)
     poly2.batch_add_elements(coeffs2, orders2)
-    poly2.print_info()
+    print(poly2.to_str(['x','y','z','lam']))
     print()
 
     jet_transport_test = jet.cJetTransport(3, 1, 5)
@@ -184,11 +185,11 @@ def test_calculate_dvars():
     jet_transport_test.set_sol(2, poly2)
 
     poly0 = jet.CPolyLinkedList(4)
-    poly0.batch_add_elements(jet.CScalarVec([1]),jet.CIndexVec([1,0,0,0]))
+    poly0.batch_add_elements(jet.CScalarVec([1,1]),jet.CIndexVec([1,0,0,0, 2,0,0,0]))
     poly1 = jet.CPolyLinkedList(4)
     poly1.batch_add_elements(jet.CScalarVec([1]),jet.CIndexVec([0,1,0,0]))
     poly2 = jet.CPolyLinkedList(4)
-    poly2.batch_add_elements(jet.CScalarVec([1]),jet.CIndexVec([0,0,1,0]))
+    poly2.batch_add_elements(jet.CScalarVec([1,1,1]),jet.CIndexVec([0,0,0,0, 0,0,1,0, 1,0,2,0]))
     jet_transport_test.set_ode_fun(0,poly0)
     jet_transport_test.set_ode_fun(1,poly1)
     jet_transport_test.set_ode_fun(2,poly2)
@@ -199,7 +200,8 @@ def test_calculate_dvars():
     for j in range(3):
         print(j)
         for order in range(3):
-            jet_transport_test.get_sol(j, order).print_info()
+            # jet_transport_test.get_sol(j, order).print_info()
+            print(jet_transport_test.get_sol(j, order).to_str(['x','y','z','lam']))
         print()
  
 

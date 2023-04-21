@@ -61,10 +61,6 @@ public:
             }
             order_start_indices[max_order] = curr_start_id;
             assert(order_start_indices[max_order] == all_series_orders.size());
-            for(auto it = order_start_indices.begin(); it != order_start_indices.end();it++)
-            {
-                STDOUT << (*it) << '\n';
-            }
 
             // Initialize "const_params"
             IndexVec param_poly_indices(param_dim + var_dim);
