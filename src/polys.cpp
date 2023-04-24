@@ -959,6 +959,7 @@ VarScalar PolyLinkedList::eval_diff_variable(const IndexVec & diff_order, const 
             if(curr_ptr != end_ptr)
             {
                 IndexType next_order = (curr_ptr -> var_order(var_id)) - diff_order[var_id];
+                assert(next_order > curr_order);
                 curr_val *= pow(x[var_id], (next_order-curr_order));
                 curr_order = next_order;
             }
@@ -989,6 +990,7 @@ VarScalar PolyLinkedList::eval_diff_variable(const IndexVec & diff_order, const 
 
                 // update curr_ variables
                 IndexType next_order = (curr_ptr->var_order(var_id) - diff_order[var_id]);
+                assert(next_order > curr_order);
                 curr_val *= pow(x[var_id], next_order - curr_order);
                 next_start_term = curr_ptr;
                 curr_order = next_order;
@@ -1337,6 +1339,21 @@ void term_comp(Monomial & f, std::vector<Series*> & series_vec, IndexType k, Hom
     }while(! const_sum_next(sep_vec, k_min_list, k_max_list));
 
     res.scalar_mul_self(f.coeff);
+}
+
+void poly_comp(PolyLinkedList &f, std::vector<Series*> & series_vec, IndexType k, Homogen & res)
+{
+    assert(f.dim == series_vec.size());
+    assert(f.increasing_order == series_vec[0]->increasing_order);
+    res.reinit(series_vec[0]->dim, k, series_vec[0]->increasing_order);
+    Homogen curr_result(series_vec[0]->dim, k, f.increasing_order);
+    PolyTerm* curr_term = f.term_tree;
+    while(curr_term != NULL)
+    {
+        term_comp(*curr_term, series_vec, k, curr_result);
+        res.destructive_add_self(curr_result);
+        curr_term = curr_term -> next;
+    }
 }
 
 void series_comp(Series &f, std::vector<Series*> & series_vec, IndexType k, Homogen& res)
