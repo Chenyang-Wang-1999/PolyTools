@@ -109,6 +109,13 @@ Monomial Monomial::derivative(IndexType var_id)
     }
 }
 
+void Monomial::integrate_self(IndexType var_id)
+{
+    _order_var[var_id] ++;
+    coeff /= (_order_var[var_id]);
+    order ++;
+}
+
 // monomial power
 Monomial Monomial::power(IndexType n)
 {
@@ -197,7 +204,7 @@ void polyterm_scale_term(PolyTerm * term, ScalarVec * scale_factor)
 }
 
 /* PolyMulSweeper */
-PolyMulSweeper::PolyMulSweeper(const Homogen & f, const Homogen & g)
+PolyMulSweeper::PolyMulSweeper(const PolyLinkedList & f, const PolyLinkedList & g)
 {
     N_terms.row_id = f.n_terms;
     N_terms.col_id = g.n_terms;
@@ -450,7 +457,7 @@ PolyLinkedList::PolyLinkedList(std::vector<Monomial> & monomial_vec)
     }
 }
 
-void PolyLinkedList::copy(PolyLinkedList & new_homog)
+void PolyLinkedList::copy_to(PolyLinkedList & new_homog)
 {
     new_homog.reinit(dim, increasing_order);
 
@@ -474,7 +481,7 @@ void PolyLinkedList::copy(PolyLinkedList & new_homog)
     }
 }
 
-void PolyLinkedList::copy_call(void (*funcall)(PolyTerm *), PolyLinkedList & new_homog)
+void PolyLinkedList::copy_and_call(void (*funcall)(PolyTerm *), PolyLinkedList & new_homog)
 {
     new_homog.reinit(dim, increasing_order);
 
@@ -873,7 +880,7 @@ void PolyLinkedList::add_self(PolyLinkedList & another)
 {
     // copy another, and destructively add to self
     PolyLinkedList another_copy(dim, increasing_order);
-    another.copy(another_copy);
+    another.copy_to(another_copy);
     destructive_add_self(another_copy);
 }
 
@@ -881,7 +888,7 @@ void PolyLinkedList::add_self(PolyLinkedList & another)
 void PolyLinkedList::add(PolyLinkedList & another, PolyLinkedList & result_copy)
 {
     // copy self
-    copy(result_copy);
+    copy_to(result_copy);
     result_copy.add_self(another);
 }
 
@@ -1043,16 +1050,16 @@ void PolyLinkedList::derivative(IndexType var_id, PolyLinkedList & res)
 
 
 
-/* Homogen */
-void homogen_multiplication(const Homogen & f, const Homogen & g, Homogen & h)
+/* poly arithmatics */
+void poly_multiplication(const PolyLinkedList & f, const PolyLinkedList & g, PolyLinkedList & h)
 {
+    // assert(f.increasing_order == g.increasing_order);
     assert(f.dim == g.dim);
     assert(f.increasing_order);
     assert(g.increasing_order);
-    // assert(f.increasing_order == g.increasing_order);
 
-    // total order  = f.order + g.order, dim = f.dim
-    h.reinit(f.dim, f.order + g.order, f.increasing_order);
+    h.reinit(f.dim, f.increasing_order);
+
     if(f.term_tree == NULL || g.term_tree == NULL)
     {
         return;
@@ -1078,26 +1085,42 @@ void homogen_multiplication(const Homogen & f, const Homogen & g, Homogen & h)
         }
     }
 }
+void homogen_multiplication(const Homogen & f, const Homogen & g, Homogen & h)
+{
+
+    // total order  = f.order + g.order, dim = f.dim
+    h.reinit(f.dim, f.order + g.order, f.increasing_order);
+    poly_multiplication(f, g, h);
+}
 
 // get the multiplication of the homogenerous polynomials in f_seq
-void homogen_mul_seq(std::vector<Homogen*> & f_seq, IndexType total_order, Homogen & res)
+void poly_mul_seq(std::vector<PolyLinkedList*> & f_seq, PolyLinkedList & res)
 {
-    Homogen temp_homogen0 = Homogen(f_seq[0]->dim, f_seq[0]->order, f_seq[0]->increasing_order);
-    Homogen temp_homogen1 = Homogen(f_seq[1]->dim, f_seq[1]->order, f_seq[1]->increasing_order);
-    Homogen* temp_homogen_ptr[2] = {&temp_homogen0, &temp_homogen1};
-    f_seq[0] -> copy(temp_homogen0);
-
-    // copy the first one in f_seq, mult the new one
-    for(IndexType f_id = 1; f_id < f_seq.size(); f_id ++)
+    PolyLinkedList temp_poly0 = PolyLinkedList(f_seq[0]->dim, f_seq[0]->increasing_order);
+    PolyLinkedList temp_poly1 = PolyLinkedList(f_seq[1]->dim, f_seq[1]->increasing_order);
+    PolyLinkedList* temp_poly_ptr[2] = {&temp_poly0, &temp_poly1};
+    f_seq[0] -> copy_to(temp_poly0);
+    for (IndexType f_id = 1; f_id < f_seq.size(); f_id ++)
     {
-        Homogen* curr_ptr = temp_homogen_ptr[((f_id+1) % 2)];
-        Homogen* res_ptr = temp_homogen_ptr[(f_id % 2)];
-        homogen_multiplication(*curr_ptr, *(f_seq[f_id]), *res_ptr);
-
+        PolyLinkedList * curr_ptr = temp_poly_ptr[((f_id + 1)%2)];
+        PolyLinkedList * res_ptr = temp_poly_ptr[(f_id % 2)];
+        poly_multiplication(*curr_ptr, *(f_seq[f_id]), * res_ptr);
     }
 
     // return the result
-    temp_homogen_ptr[(f_seq.size()+1)%2]->copy(res);
+    temp_poly_ptr[(f_seq.size()+1)%2]->copy_to(res);
+}
+
+void homogen_mul_seq(std::vector<Homogen*> & f_seq, Homogen & res)
+{
+    PolyLinkedList res_poly(f_seq[0]->dim, f_seq[0]->increasing_order);
+    std::vector<PolyLinkedList*> f_seq_poly(f_seq.size());
+    for(IndexType j = 0; j<f_seq.size();j++)
+    {
+        f_seq_poly[j] = (PolyLinkedList*) f_seq[j];
+    }
+    poly_mul_seq(f_seq_poly, res_poly);
+    res.cast_from_poly(res_poly);
 }
 
 /* Series */
@@ -1118,6 +1141,15 @@ void Series::add_term(Monomial term)
     {
         homogen_terms[term.order] -> add_term(term);
         update_order_bound(term.order);
+    }
+}
+
+void Series::add_term(PolyTerm* term)
+{
+    if(term->order < Kmax)
+    {
+        homogen_terms[term->order] -> add_term(term);
+        update_order_bound(term->order);
     }
 }
 
@@ -1330,7 +1362,7 @@ void term_comp(Monomial & f, std::vector<Series*> & series_vec, IndexType k, Hom
         // if not dump, sum and add to the result
         if(! dump)
         {
-            homogen_mul_seq(homog_ptr, k, homog_temp);
+            homogen_mul_seq(homog_ptr, homog_temp);
             assert(homog_temp.order == k);
 
           
@@ -1445,7 +1477,7 @@ void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> sca
     {
         for(IndexType col_id = 0; col_id < scalar_matrix.cols(); col_id++)
         {
-            (input_series.homog_vec[col_id]) -> copy(temp_homogen);
+            (input_series.homog_vec[col_id]) -> copy_to(temp_homogen);
             temp_homogen.scalar_mul_self(scalar_matrix(row_id, col_id));
             (output_series.homog_vec[row_id]) -> destructive_add_self (temp_homogen);
         }
@@ -1467,7 +1499,7 @@ void scalar_matrix_mul(Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> sca
     {
         for(IndexType col_id = 0; col_id < scalar_matrix.cols(); col_id++)
         {
-            (input_series[col_id]) -> copy(temp_homogen);
+            (input_series[col_id]) -> copy_to(temp_homogen);
             temp_homogen.scalar_mul_self(scalar_matrix(row_id, col_id));
             (output_series.homog_vec[row_id]) -> destructive_add_self (temp_homogen);
         }
@@ -1650,7 +1682,7 @@ void term_comp(Monomial & f, std::vector<SeriesPowerSeq*> & series_seq_vec, Inde
     else if(series_ptr.size() == 1)
     {
         // only one term
-        series_ptr[0] -> homogen_terms[k] -> copy(res);
+        series_ptr[0] -> homogen_terms[k] -> copy_to(res);
         res.scalar_mul_self(f.coeff);
         return;
     }
@@ -1713,7 +1745,7 @@ void term_comp(Monomial & f, std::vector<SeriesPowerSeq*> & series_seq_vec, Inde
         // if not dump, sum and add to the result
         if(! dump)
         {
-            homogen_mul_seq(homog_ptr, k, homog_temp);
+            homogen_mul_seq(homog_ptr, homog_temp);
             assert(homog_temp.order == k);
 
           

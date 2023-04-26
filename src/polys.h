@@ -76,6 +76,7 @@ public:
     }
 
     Monomial derivative(IndexType var_id);
+    void integrate_self(IndexType var_id);
 
     // Division
     bool divided_by(Monomial denom);
@@ -158,11 +159,11 @@ public:
 
     void remove_zeros();
     void remove_zeros_with_tol(double tol, double exp_base);
-    void copy(PolyLinkedList &);
-    void copy_call(void (*funcall)(PolyTerm*), PolyLinkedList &);
+    void copy_to(PolyLinkedList &);
+    void copy_and_call(void (*funcall)(PolyTerm*), PolyLinkedList &);
     
     template <typename DataType>
-    void copy_call(void (*funcall)(PolyTerm*, DataType*), DataType* data, PolyLinkedList & new_homog)
+    void copy_and_call(void (*funcall)(PolyTerm*, DataType*), DataType* data, PolyLinkedList & new_homog)
     {
         new_homog.reinit(dim, increasing_order);
 
@@ -195,6 +196,23 @@ public:
     }
 
     /* Link list manipulation*/
+
+    void append_new_variable(PolyLinkedList & res)
+    {
+        traverse_from_node<PolyTerm, PolyLinkedList>(
+            term_tree, [](PolyTerm * term, PolyLinkedList * new_poly)
+            {
+                IndexVec new_orders(term->dim+1);
+                for(IndexType var_id = 0; var_id < term->dim; var_id++)
+                {
+                    new_orders[var_id] = term->var_order(var_id);
+                }
+                new_orders[term->dim] = 0;
+                new_poly->add_term(Monomial(term->coeff, new_orders));
+            }, &res
+        );
+    }
+
     /* add term to the current homogenerous polynomial, 
       the new term is referenced by pointer */     
     void add_term(PolyTerm * new_term);
@@ -259,10 +277,22 @@ public:
 
     // scalar multiplication
     void scalar_mul_self(Scalar k){
-        traverse_from_node<PolyTerm, Scalar>(term_tree, polyterm_scalar_mul, &k);
+        if(ABS_FUN(k) < EPS)
+        {
+            reinit(dim, increasing_order);
+        }
+        else{
+            traverse_from_node<PolyTerm, Scalar>(term_tree, polyterm_scalar_mul, &k);
+        }
     }
     void scalar_mul(Scalar k, PolyLinkedList & new_homog){
-        copy_call<Scalar>(polyterm_scalar_mul, &k, new_homog);
+        if(ABS_FUN(k) < EPS)
+        {
+            new_homog.reinit(dim, increasing_order);
+        }
+        else{
+            copy_and_call<Scalar>(polyterm_scalar_mul, &k, new_homog);
+        }
     }
 
     // scale variable
@@ -272,7 +302,7 @@ public:
 
     void scale_var(ScalarVec k, PolyLinkedList & new_poly)
     {
-        copy_call<ScalarVec>(polyterm_scale_term, &k, new_poly);
+        copy_and_call<ScalarVec>(polyterm_scale_term, &k, new_poly);
     }
 
     // negative and substraction
@@ -280,7 +310,7 @@ public:
         traverse_from_node<PolyTerm>(term_tree, polyterm_turn_neg);
     }
     void neg(PolyLinkedList & new_homog){
-        copy_call(polyterm_turn_neg, new_homog);
+        copy_and_call(polyterm_turn_neg, new_homog);
     }
     void destructive_subs_self(PolyLinkedList & another){
         another.neg_self();
@@ -303,6 +333,12 @@ public:
     }
 
     void derivative(IndexType var_id, PolyLinkedList & res);
+    void integrate_self(IndexType var_id)
+    {
+        traverse_from_node<PolyTerm, IndexType>(term_tree, [](PolyTerm * term, IndexType * var_id){
+            term -> integrate_self(*var_id);
+        }, & var_id);
+    }
 
     /* Evaluation */
     VarScalar eval(const VarScalarVec & x)
@@ -445,21 +481,21 @@ public:
         PolyLinkedList::reinit(dim, increasing_order);
     }
 
-    void copy(Homogen & new_homog){
+    void copy_to(Homogen & new_homog){
         new_homog.reinit(dim, order, increasing_order);
-        PolyLinkedList::copy(new_homog);
+        PolyLinkedList::copy_to(new_homog);
     };
 
-    void copy_call(void (*funcall)(PolyTerm*), Homogen & new_homog){
+    void copy_and_call(void (*funcall)(PolyTerm*), Homogen & new_homog){
         new_homog.reinit(dim, order, increasing_order);
-        PolyLinkedList::copy_call(funcall, new_homog);
+        PolyLinkedList::copy_and_call(funcall, new_homog);
     };
     
     template <typename DataType>
-    void copy_call(void (*funcall)(PolyTerm*, DataType*), DataType* data, Homogen & new_homog)
+    void copy_and_call(void (*funcall)(PolyTerm*, DataType*), DataType* data, Homogen & new_homog)
     {
         new_homog.reinit(dim, order);
-        PolyLinkedList::copy_call<DataType>(funcall, data, new_homog);
+        PolyLinkedList::copy_and_call<DataType>(funcall, data, new_homog);
     }
 
     void print_info()
@@ -493,6 +529,30 @@ public:
     {
         assert(order == new_term->order);
         PolyLinkedList::insert_at_head(new_term);
+    }
+
+    void cast_from_poly(PolyLinkedList & poly)
+    {
+        assert(poly.term_tree != NULL);
+        cast_from_poly(poly, poly.term_tree->order);
+    }
+    void cast_from_poly(PolyLinkedList & poly, IndexType order)
+    {
+        this->reinit(this->dim, this->increasing_order);
+        if(poly.term_tree == NULL)
+        {
+            this->order = order;
+        }
+        else
+        {
+            assert(order == (poly.term_tree->order));
+            this->order = order;
+        }
+        this->dim = dim;
+        this->term_tree = poly.term_tree;
+        this->increasing_order = poly.increasing_order;
+        this->n_terms = poly.n_terms;
+        poly.term_tree = NULL;
     }
 
     /* Mathematics */
@@ -534,7 +594,7 @@ public:
     }
 
     void scalar_mul(Scalar k, Homogen & new_homog){
-        copy_call<Scalar>(polyterm_scalar_mul, &k, new_homog);
+        copy_and_call<Scalar>(polyterm_scalar_mul, &k, new_homog);
     }
 
     // negative and substraction
@@ -542,7 +602,7 @@ public:
         traverse_from_node<PolyTerm>(term_tree, polyterm_turn_neg);
     }
     void neg(Homogen & new_homog){
-        copy_call(polyterm_turn_neg, new_homog);
+        copy_and_call(polyterm_turn_neg, new_homog);
     }
     void destructive_subs_self(Homogen & another){
         another.neg_self();
@@ -585,7 +645,7 @@ class PolyMulSweeper
 public:
     bool increasing_order;
 
-    PolyMulSweeper(const Homogen & f, const Homogen & g);
+    PolyMulSweeper(const PolyLinkedList & f, const PolyLinkedList & g);
 
     MatrixIndexType N_terms;
 
@@ -615,8 +675,10 @@ private:
 /* Homogen arithmatics */
 
 // h = f * g
+void poly_multiplication(const PolyLinkedList & f, const PolyLinkedList & g, PolyLinkedList & h);
+void poly_mul_seq(std::vector<PolyLinkedList*> & f_seq, PolyLinkedList & res);
 void homogen_multiplication(const Homogen & f, const Homogen & g, Homogen & h);
-void homogen_mul_seq(std::vector<Homogen*> & f_seq, IndexType total_order, Homogen & res);
+void homogen_mul_seq(std::vector<Homogen*> & f_seq, Homogen & res);
 
 // series of homogenerous polynomial, with maximum order recorded by Kmax
 class Series
@@ -676,6 +738,7 @@ public:
         }
     }
     void add_term(Monomial term);
+    void add_term(PolyTerm* term);
     void add_homogen(Homogen & homog);
     void destructive_add_homogen(Homogen & homog);
     void add_series(const Series & new_series);
@@ -689,6 +752,25 @@ public:
     }
     void derivative(IndexType var_id, Series & res);
     VarScalar eval(const VarScalarVec & x);
+    void copy_to(Series & res)
+    {
+        res.reinit();
+        for(IndexType k = curr_kmin; k<curr_kmax; k++)
+        {
+            res.add_homogen(*(homogen_terms[k]));
+        }
+    }
+    void append_new_variable(Series & res)
+    {
+        res.reinit();
+        for(IndexType k = curr_kmin; k<curr_kmax; k++)
+        {
+            Homogen new_homog(dim+1, k);
+            homogen_terms[k] -> append_new_variable(new_homog);
+            res.destructive_add_homogen(new_homog);
+        }
+    }
+
     std::vector<Homogen*> homogen_terms;
 };
 
@@ -744,6 +826,24 @@ public:
             STDOUT << "Current value:" << val_id << '\n';
             series_vec[val_id] -> print_info();
             STDOUT << "########################################\n";
+        }
+    }
+
+    void copy_to(SeriesVec & res)
+    {
+        res.reinit();
+        for(IndexType j = 0; j < val_dim; j++)
+        {
+            series_vec[j] -> copy_to(*(res.series_vec[j]));
+        }
+    }
+
+    void append_new_variable(SeriesVec & res)
+    {
+        res.reinit();
+        for(IndexType j = 0; j < val_dim; j++)
+        {
+            series_vec[j] -> append_new_variable(*(res.series_vec[j]));
         }
     }
 };

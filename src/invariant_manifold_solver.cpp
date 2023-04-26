@@ -76,7 +76,7 @@ void InvariantManifoldSolver::init(EigenMatrixX P, EigenMatrixX T, EigenVectorX 
 
     for(IndexType val_id = 0; val_id < manifold_dim; val_id ++)
     {
-        s_vec.homog_vec[val_id] -> copy(curr_f1);
+        s_vec.homog_vec[val_id] -> copy_to(curr_f1);
         curr_f1.scalar_mul_self(lam(val_id));
         f.series_vec[val_id] -> destructive_add_homogen(curr_f1);
     }
@@ -261,10 +261,10 @@ void InvariantManifoldSolver::get_poly(IndexType which_poly, PolyLinkedList & da
         series_to_linklist(*(f.series_vec[val_id]), data_poly);        
         break;
     case POLY_s:
-        s_vec_ref.copy(data_poly);
+        s_vec_ref.copy_to(data_poly);
         break;
     case POLY_Ek:
-        Ek_ref.copy(data_poly);
+        Ek_ref.copy_to(data_poly);
         break;
     default:
         STDERR << "invalid poly index\n";
