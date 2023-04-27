@@ -25,7 +25,7 @@ int main()
     }
 
     Homogen result(dim, order * n_seq);
-    homogen_mul_seq(homog_seq, order*n_seq, result);
+    homogen_mul_seq(homog_seq, result);
     Scalar res_val(1.0);
     for(IndexType homog_id = 0; homog_id < n_seq; homog_id ++)
     {

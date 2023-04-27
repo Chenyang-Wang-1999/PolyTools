@@ -56,8 +56,8 @@ class CPolyLinkedList(c_invariant_manifold._CPolyLinkedList):
     def remove_zeros(self):
         super().remove_zeros()
 
-    def copy(self, another):
-        super().copy(another)
+    def copy_to(self, another):
+        super().copy_to(another)
 
     def print_info(self):
         super().print_info()

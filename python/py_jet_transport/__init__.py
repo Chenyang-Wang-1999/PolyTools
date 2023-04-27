@@ -56,8 +56,8 @@ class CPolyLinkedList(c_jet_transport._CPolyLinkedList):
     def remove_zeros(self):
         super().remove_zeros()
 
-    def copy(self, another):
-        super().copy(another)
+    def copy_to(self, another):
+        super().copy_to(another)
 
     def print_info(self):
         super().print_info()
@@ -236,6 +236,14 @@ class cJetTransport(c_jet_transport._cJetTransport):
         poly = CPolyLinkedList(self.var_dim + self.param_dim)
         super().get_sol(dim, order, poly)
         return poly
+    def get_sol_time(self, dim:int, order:int):
+        poly = CPolyLinkedList(self.var_dim + self.param_dim + 1)
+        super().get_sol_time(dim, order, poly)
+        return poly
+    def get_dvars_time(self, dim:int, order:int):
+        poly = CPolyLinkedList(self.var_dim + self.param_dim + 1)
+        super().get_dvars_time(dim, order, poly)
+        return poly
     def set_sol_by_scalars(self, coeffs:CScalarVec, err_order:int):
         super().set_sol_by_scalars(coeffs, err_order)
     def get_sol_as_scalars(self,err_order:int):
@@ -250,3 +258,9 @@ class cJetTransport(c_jet_transport._cJetTransport):
         return super().get_series_indices(j)
     def calculate_dvars(self, err_order:int):
         super().calculate_dvars(err_order)
+    def set_time_variable(self):
+        super().set_time_variable()
+    def derivative_iterate(self):
+        super().derivative_iterate()
+    def Poincare_projection(self, err_order:int, normal_vec:CScalarVec):
+        super().Poincare_projection(err_order, normal_vec)

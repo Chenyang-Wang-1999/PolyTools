@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-18
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 
 #include "../src/polys.h"

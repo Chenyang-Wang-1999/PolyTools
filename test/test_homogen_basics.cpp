@@ -57,7 +57,7 @@ int main()
     f.print_info();
     g.print_info();
     STDOUT << "------copy------\n";
-    f.copy(g);
+    f.copy_to(g);
     g.print_info();
     STDOUT << '\n';
 

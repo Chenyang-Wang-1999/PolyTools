@@ -10,7 +10,7 @@ test_poly_mul_sweeper.exe: ../obj/*cc.o ../obj/poly_utils.o
 test_remove_zeros.exe:  ../obj/*cc.o ../obj/poly_utils.o
 	c++ -Wall test_remove_zeros.cpp ../obj/*cc.o ../obj/poly_utils.o -o test_remove_zeros.exe 
 
-test_eval_and_mul.exe:  ../obj/*cc.o ../obj/poly_utils.o.o
+test_eval_and_mul.exe:  ../obj/*cc.o ../obj/poly_utils.o
 	c++ -Wall -DDEBUG test_eval_and_mul.cpp ../obj/*cc.o ../obj/poly_utils.o -o test_eval_and_mul.exe 
 
 test_mul_seq.exe:  ../obj/*cc.o ../obj/poly_utils.o

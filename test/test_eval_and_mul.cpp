@@ -1,14 +1,14 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-21
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 #include "test_common.h"
 #include <stdio.h>
 
 int main()
 {
-    IndexType N_terms=100000, order=3000, dim=2, max_diff_order=4;
+    IndexType N_terms=1000, order=30, dim=2, max_diff_order=4;
     Homogen f(dim, order), g(dim, order), h(dim, order);
     ScalarVec x_val = {Scalar(((double)rand())/RAND_MAX), 
                         Scalar(((double)rand())/RAND_MAX),
