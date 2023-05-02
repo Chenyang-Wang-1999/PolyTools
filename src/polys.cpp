@@ -1148,8 +1148,8 @@ void Series::add_term(PolyTerm* term)
 {
     if(term->order < Kmax)
     {
-        homogen_terms[term->order] -> add_term(term);
         update_order_bound(term->order);
+        homogen_terms[term->order] -> add_term(term);
     }
 }
 

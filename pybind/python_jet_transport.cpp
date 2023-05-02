@@ -8,6 +8,7 @@
 
 void set_series_vector(SeriesVec & target_series_vec, IndexType dim, PolyLinkedList & poly)
 {
+    target_series_vec.series_vec[dim]->reinit();
     PolyTerm * term_ptr = poly.term_tree;
     while(term_ptr != NULL)
     {
@@ -318,10 +319,6 @@ void cJetTransport::Poincare_projection(IndexType err_order, ScalarVec & normal_
             curr_tau.destructive_add_self(temp_homog);
         }
         curr_tau.scalar_mul_self(- 1.0/n_dot_F);
-        // debug
-        // STDOUT << "current iteration:" << curr_order<<'\n';
-        // STDOUT << "tau:\n";
-        // curr_tau.print_info();
         series_ptr[var_dim + param_dim] -> destructive_add_homogen(curr_tau);
 
 
