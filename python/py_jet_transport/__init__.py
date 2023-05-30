@@ -205,6 +205,18 @@ class CMonomial(c_jet_transport._Monomial):
     def derivative(self, var_id):
         return super().derivative(var_id) 
 
+class CSeriesVec(c_jet_transport._CSeriesVec):
+    def __init__(self, var_dim, val_dim, Kmax):
+        super().__init__(var_dim, val_dim, Kmax)
+    def reinit(self):
+        super().reinit()
+    def copy_to(self, another):
+        super().copy_to(another)
+    def add_term(self, val_id, term:CMonomial):
+        super().add_term(val_id, term)
+    def destructive_add_poly(self, val_id, poly):
+        super().destructive_add_poly(val_id, poly)
+
 
 def poly_load_from_file(fname):
     data = spio.loadmat(fname)
@@ -264,3 +276,11 @@ class cJetTransport(c_jet_transport._cJetTransport):
         super().derivative_iterate()
     def Poincare_projection(self, err_order:int, normal_vec:CScalarVec):
         super().Poincare_projection(err_order, normal_vec)
+
+def poly_comp(f:CPolyLinkedList, v:CSeriesVec, k:int, res:CPolyLinkedList):
+    c_jet_transport.poly_comp(f, v, k, res)
+
+def poly_multiplication(f:CPolyLinkedList, g: CPolyLinkedList):
+    h = CPolyLinkedList(f.dim)
+    c_jet_transport.poly_multiplication(f,g,h)
+    return h

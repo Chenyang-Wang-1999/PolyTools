@@ -1388,6 +1388,14 @@ void poly_comp(PolyLinkedList &f, std::vector<Series*> & series_vec, IndexType k
     }
 }
 
+void poly_comp(PolyLinkedList &f, SeriesVec & series_vec, IndexType k, PolyLinkedList & res)
+{
+    res.reinit(series_vec.var_dim, true);
+    Homogen res_homog(series_vec.var_dim, k);
+    poly_comp(f, series_vec.series_vec, k, res_homog);
+    res.destructive_add_self(res_homog);
+}
+
 void series_comp(Series &f, std::vector<Series*> & series_vec, IndexType k, Homogen& res)
 {
 

@@ -21,3 +21,7 @@ _invariant_manifold_rr$(SUFFIX): ../obj/*rr.o ../obj/poly_utils.o
 _jet_transport_rr$(SUFFIX): ../obj/*rr.o ../obj/poly_utils.o
 	$(CC) -O3 -Wall -shared  -fPIC -DSCALAR_MODE=2 $(INCLUDE) python_jet_transport.cpp ../obj/*rr.o ../obj/poly_utils.o -o _jet_transport_rr$(SUFFIX)
 	mv _jet_transport_rr$(SUFFIX) ../python/py_jet_transport
+
+_jet_transport_cc$(SUFFIX): ../obj/*cc.o ../obj/poly_utils.o
+	$(CC) -O3 -Wall -shared  -fPIC -DSCALAR_MODE=0 $(INCLUDE) python_jet_transport.cpp ../obj/*cc.o ../obj/poly_utils.o -o _jet_transport_cc$(SUFFIX)
+	mv _jet_transport_cc$(SUFFIX) ../python/py_jet_transport

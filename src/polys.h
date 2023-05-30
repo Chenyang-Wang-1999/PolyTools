@@ -741,6 +741,14 @@ public:
     void add_term(PolyTerm* term);
     void add_homogen(Homogen & homog);
     void destructive_add_homogen(Homogen & homog);
+    void destructive_add_poly(PolyLinkedList & poly)
+    {
+        while(poly.term_tree != NULL)
+        {
+            PolyTerm * curr_term = poly.pop_first_term();
+            add_term(curr_term);
+        }
+    }
     void add_series(const Series & new_series);
     void destructive_add_series(Series & new_series);
     void scalar_mul_self(Scalar k)
@@ -845,6 +853,16 @@ public:
         {
             series_vec[j] -> append_new_variable(*(res.series_vec[j]));
         }
+    }
+
+    void destructive_add_poly(IndexType val_id, PolyLinkedList & poly)
+    {
+        series_vec[val_id] -> destructive_add_poly(poly);
+    }
+
+    void add_term(IndexType val_id, Monomial term)
+    {
+        series_vec[val_id] -> add_term(term);
     }
 };
 
@@ -980,6 +998,8 @@ public:
 /* composition with the help of series power sequence */
 void term_comp(Monomial & f, std::vector<SeriesPowerSeq*> & series_seq_vec, IndexType k, Homogen& res);
 void series_comp(Series &f, std::vector<SeriesPowerSeq*> & series_seq_vec, IndexType k, Homogen& res);
+void poly_comp(PolyLinkedList &f, std::vector<Series*> & series_vec, IndexType k, Homogen & res);
+void poly_comp(PolyLinkedList &f, SeriesVec & series_vec, IndexType k, PolyLinkedList & res);
 
 /* series and linked list */
 void series_to_linklist(Series & poly_series, PolyLinkedList & poly_list);

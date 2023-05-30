@@ -306,10 +306,44 @@ def test_Taylor_method():
             sol_poly.destructive_add_self(jet_transporter.get_sol(var_id, curr_order))
         print(sol_poly.to_str(['x','y','z','lam']))
 
+def test_series_vec():
+    vec = jet.CSeriesVec(2, 6, 10)
+    vec.add_term(1, jet.CMonomial(1, jet.CIndexVec([0,1])))
+    vec.add_term(0, jet.CMonomial(1, jet.CIndexVec([1,0])))
+
+    f = jet.CPolyLinkedList(6)
+    f.batch_add_elements(jet.CScalarVec([
+        1, 1, 1, 1,1,1
+    ])
+        ,jet.CIndexVec([
+        1, 0, 0, 0, 0, 0,
+        0, 1, 0, 0, 0, 0,
+        1, 1, 0, 0, 0, 0,
+        0, 1, 1, 0, 0, 0,
+        1, 0, 1, 0, 0, 0,
+        2, 0, 0, 0, 0, 0,
+    ]))
+
+    res = jet.CPolyLinkedList(2)
+    jet.poly_comp(f, vec, 2, res)
+    print(res.to_str(['u','v']))
+
+def test_mul():
+    f = jet.CPolyLinkedList(2)
+    f.batch_add_elements(jet.CScalarVec([1,1]),
+                         jet.CIndexVec([1, 0, 0 ,1]))
+    g = jet.CPolyLinkedList(2)
+    g.batch_add_elements(jet.CScalarVec([1,1,-1]), 
+                         jet.CIndexVec([2,0,0,2,1,1]))
+    print(f.to_str(['x','y']))
+    print(g.to_str(['x','y']))
+    print(jet.poly_multiplication(f,g).to_str(['x','y']))
 
 if __name__ == '__main__':
     # test_ode_fun()
     # test_conversion_coeffs2()
     # test_calculate_dvars()
-    test_Taylor_method()
+    # test_Taylor_method()
+    # test_series_vec()
+    test_mul()
     

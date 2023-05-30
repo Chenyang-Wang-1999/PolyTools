@@ -13,7 +13,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/complex.h>
 #include <pybind11/stl_bind.h>
-// #include <pybind11/eigen.h>
+#include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
 
 namespace py=pybind11;
@@ -143,6 +143,11 @@ PYBIND11_MAKE_OPAQUE(ScalarVec);
     PYBIND11_MAKE_OPAQUE(VarScalarVec);
 #endif 
 
+void poly_comp_py(PolyLinkedList& f, SeriesVec & v, IndexType k, PolyLinkedList &res)
+{
+    poly_comp(f, v, k , res);
+}
+
 #if SCALAR_MODE == 0
 PYBIND11_MODULE(_jet_transport_cc, m)
 #elif SCALAR_MODE == 1
@@ -157,6 +162,16 @@ PYBIND11_MODULE(_jet_transport_rr, m)
     );
     py::bind_vector<IndexVec>(m, "CIndexVec");
     py::bind_vector<ScalarVec>(m, "CScalarVec");
+    py::class_<SeriesVec>(m,"_CSeriesVec")
+        .def(py::init<IndexType, IndexType, IndexType>() )
+        .def("reinit", &SeriesVec::reinit)
+        .def("copy_to", &SeriesVec::copy_to)
+        .def("add_term", &SeriesVec::add_term)
+        .def("destructive_add_poly", &SeriesVec::destructive_add_poly);
+
+    m.def("poly_comp", &poly_comp_py);
+    m.def("poly_multiplication", &poly_multiplication);
+
     #if SCALAR_MODE == 1
         py::bind_vector<VarScalarVec>(m, "CVarScalarVec");
     #endif
