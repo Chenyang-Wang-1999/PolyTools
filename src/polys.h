@@ -864,6 +864,11 @@ public:
     {
         series_vec[val_id] -> add_term(term);
     }
+
+    void get_poly(IndexType val_id, IndexType curr_order, PolyLinkedList & poly)
+    {
+        series_vec[val_id] -> homogen_terms[curr_order]->PolyLinkedList::copy_to(poly);
+    }
 };
 
 // Homogen vector

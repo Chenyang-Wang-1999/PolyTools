@@ -339,11 +339,60 @@ def test_mul():
     print(g.to_str(['x','y']))
     print(jet.poly_multiplication(f,g).to_str(['x','y']))
 
+def test_series_vec():
+    coeffs0 = jet.CScalarVec([
+        -1, 2, 1
+    ])
+    orders0 = jet.CIndexVec([
+        1,0,0,0, 
+        0,1,0,0,
+        1,0,1,0
+    ])
+    poly0 = jet.CPolyLinkedList(4)
+    poly0.batch_add_elements(coeffs0, orders0)
+    print(poly0.to_str(['x','y','z','lam']))
+
+    coeffs1 = jet.CScalarVec([
+        -1, -2
+    ])
+    orders1 = jet.CIndexVec([
+        0,1,0,0, 
+        1,0,0,0
+    ])
+    poly1 = jet.CPolyLinkedList(4)
+    poly1.batch_add_elements(coeffs1, orders1)
+    print(poly1.to_str(['x','y','z','lam']))
+
+    coeffs2 = jet.CScalarVec([
+        -1, 3, 3, 1
+    ])
+    orders2 = jet.CIndexVec([
+        0,0,1,0,
+        0,0,0,0,
+        0,0,0,1,
+        2,0,0,0
+    ])
+    poly2 = jet.CPolyLinkedList(4)
+    poly2.batch_add_elements(coeffs2, orders2)
+    print(poly2.to_str(['x','y','z','lam']))
+
+    series_vec = jet.CSeriesVec(4, 3, 5)
+    series_vec.destructive_add_poly(0, poly0)
+    series_vec.destructive_add_poly(1, poly1)
+    series_vec.destructive_add_poly(2, poly2)
+
+    val_id = 2
+    curr_order = 2
+    for j in range(4):
+        curr_poly = series_vec.get_poly(val_id, curr_order)
+        print(curr_poly.to_str(['x','y','z','lam']))
+
 if __name__ == '__main__':
     # test_ode_fun()
     # test_conversion_coeffs2()
     # test_calculate_dvars()
     # test_Taylor_method()
     # test_series_vec()
-    test_mul()
+    # test_mul()
+    test_series_vec()
     

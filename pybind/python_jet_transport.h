@@ -164,9 +164,13 @@ PYBIND11_MODULE(_jet_transport_rr, m)
     py::bind_vector<ScalarVec>(m, "CScalarVec");
     py::class_<SeriesVec>(m,"_CSeriesVec")
         .def(py::init<IndexType, IndexType, IndexType>() )
+        .def_readonly("var_dim", &SeriesVec::var_dim)
+        .def_readonly("val_dim", &SeriesVec::val_dim)
+        .def_readonly("Kmax", &SeriesVec::Kmax)
         .def("reinit", &SeriesVec::reinit)
         .def("copy_to", &SeriesVec::copy_to)
         .def("add_term", &SeriesVec::add_term)
+        .def("get_poly", &SeriesVec::get_poly)
         .def("destructive_add_poly", &SeriesVec::destructive_add_poly);
 
     m.def("poly_comp", &poly_comp_py);

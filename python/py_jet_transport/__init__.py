@@ -216,6 +216,10 @@ class CSeriesVec(c_jet_transport._CSeriesVec):
         super().add_term(val_id, term)
     def destructive_add_poly(self, val_id, poly):
         super().destructive_add_poly(val_id, poly)
+    def get_poly(self, val_id, curr_order):
+        poly = CPolyLinkedList(self.var_dim)
+        super().get_poly(val_id, curr_order, poly)
+        return poly
 
 
 def poly_load_from_file(fname):
