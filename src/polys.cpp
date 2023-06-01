@@ -584,19 +584,21 @@ void PolyLinkedList::destructive_add_self(PolyLinkedList & another)
     PolyTerm * LHS_ptr=term_tree;
     bool is_first_term = true;// whether LHS_ptr points to the first term
 
-    // check whether current term_tree is empty
-    if(LHS_ptr == NULL)
-    {
-        term_tree = another.term_tree;
-        n_terms = another.n_terms;
-        another.term_tree = NULL;
-        another.n_terms = 0;
-        return;
-    }
+    
 
     // exhaust the other homogen
     while(another.term_tree != NULL)
     {
+        // check whether current term_tree is empty
+        if(LHS_ptr == NULL)
+        {
+            term_tree = another.term_tree;
+            n_terms = another.n_terms;
+            another.term_tree = NULL;
+            another.n_terms = 0;
+            return;
+        }
+
         PolyTerm * new_term_ptr;
         if(is_first_term)
         {
