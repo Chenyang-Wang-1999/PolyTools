@@ -107,14 +107,14 @@ class CPolyLinkedList(c_jet_transport._CPolyLinkedList):
         return result
 
     def destructive_subs_self(self, another):
-        super().destructure_subs_self(another)
+        super().destructive_subs_self(another)
 
     def subs_self(self, another):
         super().subs_self(another)
 
     def destructive_subs(self, another):
         result = CPolyLinkedList(self.dim)
-        super().destructure_subs(another, result)
+        super().destructive_subs(another, result)
         return result
     
     def subs(self, another):
