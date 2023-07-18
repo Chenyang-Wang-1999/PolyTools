@@ -698,8 +698,7 @@ public:
         while(curr_ptr != NULL)
         {
             // 1. coefficient
-            if(SCALAR_MODE == 0)
-            {
+            #if SCALAR_MODE == 0
                 // complex coefficients
                 poly_string << '+' << '(' << curr_ptr->coeff.real();
                 if(curr_ptr->coeff.imag() >=0)
@@ -710,12 +709,10 @@ public:
                 {
                     poly_string << '-' << abs(curr_ptr->coeff.imag()) << "*i)";
                 }
-            }
-            else
-            {
+            #else
                 // real coefficients
                 poly_string << '+' << '(' << curr_ptr->coeff << ')';
-            }
+            #endif
 
             // 2. variables
             for(IndexType curr_var = 0; curr_var < dim; curr_var++)
