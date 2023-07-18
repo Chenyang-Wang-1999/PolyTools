@@ -4,7 +4,7 @@
  * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 
-#include "../src/polys.h"
+#include "../src/polys.hpp"
 #include <cstdlib>
 #include <ctime>
 #include <complex>

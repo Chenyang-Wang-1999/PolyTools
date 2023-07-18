@@ -3,8 +3,8 @@
  * @date          2023-03-02
  * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
-#include "../src/polys.h"
-#include "../src/poly_utils.h"
+#include "../src/polys.hpp"
+#include "../src/poly_utils.hpp"
 #include <vector>
 #include <pybind11/pybind11.h>
 #include <pybind11/complex.h>

@@ -7,7 +7,7 @@
 #ifndef INVARIANT_MANIFOLD_SOLVER_H
 #define INVARIANT_MANIFOLD_SOLVER_H
 
-#include "polys.h"
+#include "polys.hpp"
 #include <eigen3/Eigen/Core>
 
 

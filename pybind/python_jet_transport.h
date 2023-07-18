@@ -7,8 +7,8 @@
 #ifndef PYTHON_JET_TRANSPORT_H
 #define PYTHON_JET_TRANSPORT_H
 
-#include "../src/polys.h"
-#include "../src/poly_utils.h"
+#include "../src/polys.hpp"
+#include "../src/poly_utils.hpp"
 #include <vector>
 #include <pybind11/pybind11.h>
 #include <pybind11/complex.h>

@@ -16,6 +16,7 @@
 #include <complex>
 #include <vector>
 #include <eigen3/Eigen/Core>
+#include <iostream>
 
 #if (SCALAR_MODE == 0)
     // complex coeff, complex var

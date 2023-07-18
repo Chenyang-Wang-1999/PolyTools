@@ -6,7 +6,7 @@
 
 #include "../src/basic_defs.h"
 #include "../src/invariant_manifold_solver.h"
-#include "../src/polys.h"
+#include "../src/polys.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/complex.h>
 #include <pybind11/stl_bind.h>
