@@ -3,20 +3,27 @@
  * @date          2023-03-02
  * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
-#include "../src/basic_defs.h"
 #include "../src/polys.h"
+#include "../src/poly_utils.h"
+#include <vector>
 #include <pybind11/pybind11.h>
 #include <pybind11/complex.h>
 #include <pybind11/stl_bind.h>
 #include <pybind11/eigen.h>
+#include <pybind11/iostream.h>
 
 namespace py=pybind11;
+
 PYBIND11_MAKE_OPAQUE(IndexVec);
 PYBIND11_MAKE_OPAQUE(ScalarVec);
-
 #if SCALAR_MODE == 1
     PYBIND11_MAKE_OPAQUE(VarScalarVec);
 #endif 
+
+void poly_comp_py(PolyLinkedList& f, SeriesVec & v, IndexType k, PolyLinkedList &res)
+{
+    poly_comp(f, v, k , res);
+}
 
 #if SCALAR_MODE == 0
 PYBIND11_MODULE(_poly_tools_cc, m)
@@ -26,13 +33,31 @@ PYBIND11_MODULE(_poly_tools_rc, m)
 PYBIND11_MODULE(_poly_tools_rr, m)
 #endif
 {
+    py::scoped_ostream_redirect stream(
+        STDOUT,
+        py::module::import("sys").attr("stdout")
+    );
     py::bind_vector<IndexVec>(m, "CIndexVec");
     py::bind_vector<ScalarVec>(m, "CScalarVec");
+    py::class_<SeriesVec>(m,"_CSeriesVec")
+        .def(py::init<IndexType, IndexType, IndexType>() )
+        .def_readonly("var_dim", &SeriesVec::var_dim)
+        .def_readonly("val_dim", &SeriesVec::val_dim)
+        .def_readonly("Kmax", &SeriesVec::Kmax)
+        .def("reinit", &SeriesVec::reinit)
+        .def("copy_to", &SeriesVec::copy_to)
+        .def("add_term", &SeriesVec::add_term)
+        .def("get_poly", &SeriesVec::get_poly)
+        .def("destructive_add_poly", &SeriesVec::destructive_add_poly);
+
+    m.def("poly_comp", &poly_comp_py);
+    m.def("poly_multiplication", &poly_multiplication);
+
     #if SCALAR_MODE == 1
         py::bind_vector<VarScalarVec>(m, "CVarScalarVec");
     #endif
     py::class_<PolyLinkedList>(m, "_CPolyLinkedList")
-        .def(py::init<IndexType, bool>())
+        .def(py::init<IndexType>())
         .def("reinit", &PolyLinkedList::reinit)
         .def("remove_zeros", &PolyLinkedList::remove_zeros)
         .def("copy_to", &PolyLinkedList::copy_to)
@@ -51,14 +76,32 @@ PYBIND11_MODULE(_poly_tools_rr, m)
         .def("destructive_subs", &PolyLinkedList::destructive_subs)
         .def("subs_self", &PolyLinkedList::subs_self)
         .def("subs", &PolyLinkedList::subs)
+        .def("derivative", &PolyLinkedList::derivative)
         .def("eval", &PolyLinkedList::eval)
         .def("eval_diff", &PolyLinkedList::eval_diff)
+        .def("partial_eval", &PolyLinkedList::partial_eval)
         .def("batch_eval", &PolyLinkedList::batch_eval)
         .def("batch_add_elements", &PolyLinkedList::batch_add_elements)
         .def("batch_get_data", &PolyLinkedList::batch_get_data)
         .def("init_with_data", &PolyLinkedList::init_with_data)
         .def_readonly("dim", &PolyLinkedList::dim)
-        .def_readonly("increasing_order", &PolyLinkedList::increasing_order)
         .def_readonly("n_terms", &PolyLinkedList::n_terms);
 
+    py::class_<Monomial>(m, "_Monomial")
+        .def(py::init<Scalar, IndexVec>())
+        .def("eval", &Monomial::eval)
+        .def("__LT__", &Monomial::operator<)
+        .def("__GT__", &Monomial::operator>)
+        .def("__LE__", &Monomial::operator<=)
+        .def("__GE__", &Monomial::operator>=)
+        .def("__EQ__", &Monomial::operator==)
+        .def("__mul__", &Monomial::operator*)
+        .def("__pow__", &Monomial::power)
+        .def("copy_to", &Monomial::copy)
+        .def("get_order", &Monomial::var_order)
+        .def("derivative", &Monomial::derivative)
+        .def("partial_eval", &Monomial::partial_eval)
+        .def_readonly("dim", &Monomial::dim)
+        .def_readwrite("coeff", &Monomial::coeff);
+    
 }

@@ -94,6 +94,40 @@ public:
         return Monomial(coeff, new_order_var);}
 
     void print_info();
+
+    // partial evaluation
+    Monomial partial_eval(VarScalarVec & var_vals, IndexVec & eval_id_list, IndexVec & new_dof_map){
+        // evaluate the values of a part of variables and restore the remaining variables
+        assert(var_vals.size() == eval_id_list.size());
+        assert((var_vals.size() + new_dof_map.size()) == this->dim);
+
+        // 1. calculate new coefficient
+        Scalar new_coeff = this->coeff;
+        auto var_vals_it = var_vals.begin();
+        auto eval_id_list_it = eval_id_list.begin();
+        while(var_vals_it != var_vals.end())
+        {
+            if(this->_order_var[(*eval_id_list_it)])
+            {
+                new_coeff *= pow((*var_vals_it), this->_order_var[(*eval_id_list_it)]);
+            }
+            var_vals_it ++;
+            eval_id_list_it++;
+        }
+
+        // 2. get new var orders
+        IndexVec new_var_orders(new_dof_map.size()); 
+        auto new_dof_map_it = new_dof_map.begin();
+        auto new_var_orders_it = new_var_orders.begin();
+        while(new_dof_map_it != new_dof_map.end())
+        {
+            (*new_var_orders_it) = _order_var[(*new_dof_map_it)];
+            new_dof_map_it ++;
+            new_var_orders_it ++;
+        }
+
+        return Monomial(new_coeff, new_var_orders);
+    }
     
 
 private:
@@ -354,6 +388,17 @@ public:
     VarScalar eval_diff(const IndexVec & diff_order, const VarScalarVec & x)
     {
         return eval_diff_variable(diff_order, x, term_tree, NULL, 0);
+    }
+
+    void partial_eval(VarScalarVec & var_vals, IndexVec & eval_id_list, IndexVec & new_dof_map, PolyLinkedList * new_poly){
+        new_poly->reinit(new_dof_map.size(), this->increasing_order);
+
+        PolyTerm* curr_ptr = term_tree;
+        while(curr_ptr != NULL)
+        {
+            new_poly->add_term(curr_ptr->partial_eval(var_vals, eval_id_list, new_dof_map));
+            curr_ptr = curr_ptr->next;
+        }
     }
 
 

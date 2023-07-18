@@ -25,3 +25,7 @@ _jet_transport_rr$(SUFFIX): ../obj/*rr.o ../obj/poly_utils.o
 _jet_transport_cc$(SUFFIX): ../obj/*cc.o ../obj/poly_utils.o
 	$(CC) -O3 -Wall -shared  -fPIC -DSCALAR_MODE=0 $(INCLUDE) python_jet_transport.cpp ../obj/*cc.o ../obj/poly_utils.o -o _jet_transport_cc$(SUFFIX)
 	mv _jet_transport_cc$(SUFFIX) ../python/py_jet_transport
+
+_poly_tools_cc$(SUFFIX): ../obj/*cc.o ../obj/poly_utils.o
+	$(CC) -O3 -Wall -shared -fPIC -DSCALAR_MODE=0 $(INCLUDE) python_poly_tools.cpp ../obj/*cc.o ../obj/poly_utils.o -o _poly_tools_cc$(SUFFIX)
+	mv _poly_tools_cc$(SUFFIX) ../python/poly_tools

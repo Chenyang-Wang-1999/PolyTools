@@ -203,6 +203,7 @@ void polyterm_scale_term(PolyTerm * term, ScalarVec * scale_factor)
     }
 }
 
+
 /* PolyMulSweeper */
 PolyMulSweeper::PolyMulSweeper(const PolyLinkedList & f, const PolyLinkedList & g)
 {
