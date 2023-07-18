@@ -13,9 +13,11 @@
 #include <pybind11/iostream.h>
 
 namespace py=pybind11;
+using namespace PolyTools;
 
 PYBIND11_MAKE_OPAQUE(IndexVec);
 PYBIND11_MAKE_OPAQUE(ScalarVec);
+PYBIND11_MAKE_OPAQUE(std::vector<std::string>);
 #if SCALAR_MODE == 1
     PYBIND11_MAKE_OPAQUE(VarScalarVec);
 #endif 
@@ -37,6 +39,7 @@ PYBIND11_MODULE(_poly_tools_rr, m)
         STDOUT,
         py::module::import("sys").attr("stdout")
     );
+    py::bind_vector<std::vector<std::string>>(m, "CStrVec");
     py::bind_vector<IndexVec>(m, "CIndexVec");
     py::bind_vector<ScalarVec>(m, "CScalarVec");
     py::class_<SeriesVec>(m,"_CSeriesVec")
@@ -61,6 +64,7 @@ PYBIND11_MODULE(_poly_tools_rr, m)
         .def("reinit", &PolyLinkedList::reinit)
         .def("remove_zeros", &PolyLinkedList::remove_zeros)
         .def("copy_to", &PolyLinkedList::copy_to)
+        .def("to_str", &PolyLinkedList::to_str)
         .def("print_info", &PolyLinkedList::print_info)
         .def("destructive_add_self", &PolyLinkedList::destructive_add_self)
         .def("destructive_add", &PolyLinkedList::destructive_add)

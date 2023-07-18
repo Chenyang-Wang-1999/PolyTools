@@ -37,6 +37,10 @@ class CScalarVec(c_poly_tools.CScalarVec):
     def __init__(self, vec):
         super().__init__(vec)
 
+class CStrVec(c_poly_tools.CStrVec):
+    def __init__(self, vec):
+        super().__init__(vec)
+
 if(MODE == 'rc'):
     class CVarScalarVec(c_poly_tools.CVarScalarVec):
         def __init__(self, vec):
@@ -183,22 +187,24 @@ class CPolyLinkedList(c_poly_tools._CPolyLinkedList):
         spio.savemat(fname, data)
 
     def to_str(self, varname:list):
-        coeffs, orders = self.batch_get_data()
-        poly_str = ''
-        for j in range(len(coeffs)):
-            if(isinstance(coeffs[j], complex)):
-                # coeff_str = str(coeffs[j])
-                # poly_str += "+" + "%s"%(coeff_str.replace('j','i'))
-                poly_str += "+" + "(%+.18e%+.18e*i)"%(coeffs[j].real, coeffs[j].imag)
-            else:
-                poly_str += "+" + "(%s)"%(str(coeffs[j]))
-            for k in range(self.dim):
-                if(orders[j, k] > 1):
-                    poly_str += '*(%s**%d)'%(varname[k], orders[j,k])
-                elif(orders[j, k] == 1):
-                    poly_str += '*%s'%(varname[k])
-        poly_str += ';'
-        return poly_str   
+        varname_cstr = CStrVec(varname)
+        return super().to_str(varname_cstr)
+        # coeffs, orders = self.batch_get_data()
+        # poly_str = ''
+        # for j in range(len(coeffs)):
+        #     if(isinstance(coeffs[j], complex)):
+        #         # coeff_str = str(coeffs[j])
+        #         # poly_str += "+" + "%s"%(coeff_str.replace('j','i'))
+        #         poly_str += "+" + "(%+.18e%+.18e*i)"%(coeffs[j].real, coeffs[j].imag)
+        #     else:
+        #         poly_str += "+" + "(%s)"%(str(coeffs[j]))
+        #     for k in range(self.dim):
+        #         if(orders[j, k] > 1):
+        #             poly_str += '*(%s**%d)'%(varname[k], orders[j,k])
+        #         elif(orders[j, k] == 1):
+        #             poly_str += '*%s'%(varname[k])
+        # poly_str += ';'
+        # return poly_str   
 
 class CMonomial(c_poly_tools._Monomial):
     def __init__(self, coeff, orders) -> None:

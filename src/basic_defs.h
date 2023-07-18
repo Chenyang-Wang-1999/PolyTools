@@ -7,16 +7,19 @@
 #ifndef BASIC_DEFS_H
 #define BASIC_DEFS_H
 
-// Define variable type
-#ifndef SCALAR_MODE
-#define SCALAR_MODE 0
-#endif
-
 
 #include <complex>
 #include <vector>
 #include <eigen3/Eigen/Core>
 #include <iostream>
+
+namespace PolyTools{
+
+// Define variable type
+#ifndef SCALAR_MODE
+#define SCALAR_MODE 0
+#endif
+
 
 #if (SCALAR_MODE == 0)
     // complex coeff, complex var
@@ -46,5 +49,6 @@ typedef Eigen::Matrix<VarScalar, Eigen::Dynamic, 1> EigenVarVectorX;
 #define EPS 1e-16
 #define EXP_BASE 1
 #define ABS_FUN abs
+}// namespace PolyTools
 
 #endif

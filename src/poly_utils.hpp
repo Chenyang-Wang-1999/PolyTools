@@ -13,6 +13,8 @@
         |oo||o
     boards = {0,0,2,2,3}, data = {0,2,0,1}
 */ 
+namespace PolyTools{
+
 void const_sum_boards_to_data(std::vector<IndexType> &boards, std::vector<IndexType> &data)
 {
     // data.clear();
@@ -132,4 +134,5 @@ bool const_sum_next(std::vector<IndexType> &boards, IndexVec & ball_min, IndexVe
     return false;
 }
 
+}
 #endif

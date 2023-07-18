@@ -34,7 +34,7 @@ def main_test_partial_eval():
     )
     print(new_poly.to_str(['y','x']))
 
-    new_poly = my_poly.scale_var(pt.CScalarVec([2,1,1j]))
+    new_poly = my_poly.scale_var(pt.CScalarVec([2,1,-1j]))
     print(new_poly.to_str(['x','y','z']))
 
 

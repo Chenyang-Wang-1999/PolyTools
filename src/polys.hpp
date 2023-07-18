@@ -17,8 +17,11 @@
 #include "linklist_tools.hpp"
 #include "poly_utils.hpp"
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 #include <eigen3/Eigen/Core>
 
+namespace PolyTools{
 
 /* Monomial: type for multivarite monomial */
 class Monomial
@@ -307,6 +310,7 @@ void polyterm_scale_term(PolyTerm * term, ScalarVec * scale_factor)
         term->coeff *= pow((*scale_factor)[var_id], var_order);
     }
 }
+
 
 /* Tools for homogen multiplication */
 typedef struct MatrixIndexType
@@ -683,6 +687,52 @@ public:
             curr_ptr = curr_ptr->next;
             curr_ptr -> next = NULL;
         }
+    }
+
+    // to phcpy style string
+    std::string to_str(const std::vector<std::string> & var_name_list)
+    {
+        PolyTerm * curr_ptr = term_tree;
+        std::ostringstream poly_string;
+        poly_string << std::setprecision(18);
+        while(curr_ptr != NULL)
+        {
+            // 1. coefficient
+            if(SCALAR_MODE == 0)
+            {
+                // complex coefficients
+                poly_string << '+' << '(' << curr_ptr->coeff.real();
+                if(curr_ptr->coeff.imag() >=0)
+                {
+                    poly_string << '+' << abs(curr_ptr->coeff.imag()) << "*i)";
+                }
+                else
+                {
+                    poly_string << '-' << abs(curr_ptr->coeff.imag()) << "*i)";
+                }
+            }
+            else
+            {
+                // real coefficients
+                poly_string << '+' << '(' << curr_ptr->coeff << ')';
+            }
+
+            // 2. variables
+            for(IndexType curr_var = 0; curr_var < dim; curr_var++)
+            {
+                if(curr_ptr->var_order(curr_var) > 1)
+                {
+                    poly_string << "*(" << var_name_list[curr_var] <<"**" << curr_ptr->var_order(curr_var) <<')';
+                }
+                else if(curr_ptr->var_order(curr_var) == 1)
+                {
+                    poly_string << "*" << var_name_list[curr_var];
+                }
+            }
+            curr_ptr = curr_ptr->next;
+        }
+        poly_string << ';';
+        return poly_string.str();
     }
 
     /* Mathematics */
@@ -2754,4 +2804,5 @@ void series_to_linklist(Series & poly_series, PolyLinkedList & poly_list)
 
 }
 
+} // namespace PolyTools
 #endif
