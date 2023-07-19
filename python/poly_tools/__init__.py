@@ -1,7 +1,7 @@
 '''
 author:        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
 date:          2022-12-22
-Copyright © Department of Physics, Tsinghua University. All rights reserved
+Copyright © Department of Physics, Tsinghua University.  All rights reserved
 '''
 
 MODE = 'cc'
@@ -38,6 +38,10 @@ class CScalarVec(c_poly_tools.CScalarVec):
         super().__init__(vec)
 
 class CStrVec(c_poly_tools.CStrVec):
+    def __init__(self, vec):
+        super().__init__(vec)
+
+class CLaurantIndexVec(c_poly_tools.CLaurantIndexVec):
     def __init__(self, vec):
         super().__init__(vec)
 
@@ -232,6 +236,29 @@ class CSeriesVec(c_poly_tools._CSeriesVec):
         super().get_poly(val_id, curr_order, poly)
         return poly
 
+class CLaurant(c_poly_tools._CLaurant):
+    dim: int 
+    num: CPolyLinkedList
+    num_max_orders: CIndexVec
+    denom_orders: CIndexVec
+
+    def __init__(self, dim):
+        super().__init__(dim)
+    
+    def reinit(self):
+        super().reinit()
+
+    def reduction(self):
+        super().reduction()
+
+    def set_Laurant(self, num:CPolyLinkedList, denom:CMonomial):
+        super().set_Laurant(num, denom)
+    
+    def set_Laurant_by_terms(self, coeffs:CScalarVec , orders:CLaurantIndexVec):
+        super().set_Laurant_by_terms(coeffs, orders)
+    
+    def eval(self, x_arr:CVarScalarVec):
+        return super().eval(x_arr)
 
 def poly_load_from_file(fname):
     data = spio.loadmat(fname)

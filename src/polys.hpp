@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-18
- * Copyright © Department of Physics, Tsinghua University. All rights reserved
+ * Copyright © Department of Physics, Tsinghua University.  All rights reserved
  */
 
 #ifndef POLYS_H
@@ -208,7 +208,7 @@ public:
 
 
     /* Utilities */
-    IndexType var_order(IndexType var_id){return _order_var[var_id];}
+    IndexType& var_order(IndexType var_id){return _order_var[var_id];}
     // copy
     Monomial copy(){
         IndexVec new_order_var(dim);
@@ -528,6 +528,44 @@ public:
         STDOUT << "Total terms: " << n_terms << '\n';
         STDOUT << "-----------------\n";
         traverse_from_node<PolyTerm>(term_tree, polyterm_print_info);
+    }
+
+    void get_max_order(IndexVec & max_orders)
+    {
+        max_orders.clear();
+        max_orders.resize(dim);
+        max_orders.assign(dim, 0);
+        traverse_from_node<PolyTerm, IndexVec>(term_tree, [](PolyTerm * curr_term, IndexVec * max_order_ptr){
+            for(IndexType curr_var = 0; curr_var < curr_term->dim; curr_var++)
+            {
+                if(curr_term->var_order(curr_var) > (*max_order_ptr)[curr_var])
+                {
+                    (*max_order_ptr)[curr_var] = curr_term->var_order(curr_var);
+                }
+            }
+        }, &max_orders);
+    }
+
+    void get_min_order(const IndexVec & max_orders, IndexVec & min_orders)
+    {
+        min_orders.clear();
+        min_orders.resize(dim);
+        min_orders.assign(max_orders.begin(), max_orders.end());
+        traverse_from_node<PolyTerm, IndexVec>(term_tree, [](PolyTerm * curr_term, IndexVec * min_order_ptr){
+            for(IndexType curr_var = 0; curr_var < curr_term->dim; curr_var++)
+            {
+                if(curr_term->var_order(curr_var) < (*min_order_ptr)[curr_var])
+                {
+                    (*min_order_ptr)[curr_var] = curr_term->var_order(curr_var);
+                }
+            }
+        }, &min_orders);
+    }
+
+    void get_max_and_min_order(IndexVec & max_orders, IndexVec & min_orders)
+    {
+        get_max_order(max_orders);
+        get_min_order(max_orders, min_orders);
     }
 
     /* Link list manipulation*/
@@ -1270,6 +1308,118 @@ private:
     }
 
 
+};
+
+class Laurant
+{
+public:
+    IndexType dim;
+    PolyLinkedList num;
+    // denom: 1, max_negative_orders
+    IndexVec num_max_orders;
+    IndexVec denom_orders;
+
+    Laurant(IndexType dim):dim(dim), num(dim){
+        num_max_orders.assign(dim, 0);
+        denom_orders.assign(dim, 0);
+    }
+
+    void reinit()
+    {
+        num.reinit(dim, num.increasing_order);
+        num_max_orders.assign(dim, 0);
+        denom_orders.assign(dim, 0);
+    }
+    
+    void reduction()
+    {
+        // conduct reduction of the Laurant polynomial
+        IndexVec num_min_orders;
+        
+        num.get_min_order(num_max_orders, num_min_orders);
+
+        // 1. find the common factor
+        IndexVec orders_common_factor(dim);
+        for(IndexType var_id = 0; var_id < dim; var_id++)
+        {
+            orders_common_factor[var_id] = (num_min_orders[var_id] < denom_orders[var_id])?
+                         num_min_orders[var_id] : denom_orders[var_id];
+            denom_orders[var_id] -= orders_common_factor[var_id];
+            num_max_orders[var_id] -= orders_common_factor[var_id];
+        }
+
+
+        // 2. divided by the common factor
+        traverse_from_node<PolyTerm, IndexVec>(
+            num.term_tree,
+            [](PolyTerm * curr_term, IndexVec* common_factor_ptr)
+            {
+                for(IndexType var_id = 0; var_id < curr_term->dim; var_id ++)
+                {
+                    curr_term->var_order(var_id) -= (*common_factor_ptr)[var_id];
+                }
+            },
+            &orders_common_factor
+        );
+    }
+
+    void set_Laurant(PolyLinkedList & num, Monomial & denom)
+    {
+        assert(num.dim == dim);
+        assert(denom.dim == dim);
+        num.scalar_mul(1.0/denom.coeff, this->num);
+        num.get_max_order(num_max_orders);
+        for(IndexType var_id = 0; var_id < dim; var_id ++)
+        {
+            denom_orders[var_id] = denom.var_order(var_id);
+        }
+
+        reduction();
+    }
+
+    void set_Laurant_by_terms(ScalarVec coeffs, std::vector<int> orders)
+    {
+        // assertion
+        assert(coeffs.size() * dim == orders.size());
+        // Find minimal orders
+        num_max_orders.assign(dim, 0);
+        denom_orders.assign(dim, 0);
+        for(IndexType term_id = 0; term_id < coeffs.size(); term_id ++)
+        {
+            for(IndexType var_id = 0; var_id < dim; var_id ++)
+            {
+                if(orders[term_id * dim + var_id] < 0)
+                {
+                    if(abs(orders[term_id * dim + var_id]) > denom_orders[var_id])
+                    {
+                        denom_orders[var_id] = abs(orders[term_id * dim + var_id]);
+                    }
+                }
+            }
+        }
+
+        // Add terms
+        for(IndexType term_id = 0; term_id < coeffs.size(); term_id ++)
+        {
+            IndexVec curr_orders(dim);
+            for(IndexType var_id = 0; var_id < dim; var_id ++)
+            {
+                curr_orders[var_id] = orders[term_id * dim + var_id] + denom_orders[var_id];
+            }
+            num.add_term(Monomial(coeffs[term_id], curr_orders));
+        }
+        num.get_max_order(num_max_orders);
+    }
+
+    VarScalar eval(VarScalarVec x_arr)
+    {
+        VarScalar val = num.eval(x_arr);
+        for(IndexType var_id = 0; var_id < dim; var_id ++)
+        {
+            val /= pow(x_arr[var_id], denom_orders[var_id]);
+        }
+        return val;
+    }
 };
 
 /* Homogeneous polymial*/
