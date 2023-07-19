@@ -260,6 +260,11 @@ class CLaurant(c_poly_tools._CLaurant):
     def eval(self, x_arr:CVarScalarVec):
         return super().eval(x_arr)
 
+    def flip_variable(self, var_id:int):
+        new_laurant = CLaurant(self.dim)
+        super().flip_variable(var_id, new_laurant)
+        return new_laurant
+
 def poly_load_from_file(fname):
     data = spio.loadmat(fname)
     coeffs = data['coeffs'].flatten()

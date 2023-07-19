@@ -1416,9 +1416,48 @@ public:
         VarScalar val = num.eval(x_arr);
         for(IndexType var_id = 0; var_id < dim; var_id ++)
         {
-            val /= pow(x_arr[var_id], denom_orders[var_id]);
+            if(denom_orders[var_id] > 0)
+            {
+                val /= pow(x_arr[var_id], denom_orders[var_id]);
+            }
         }
         return val;
+    }
+
+    /* 
+        f(x1, x2, ..., xi, ..., xn) -> g(x) = f(x1, x2, ..., 1/xi, ..., xn) 
+    */
+    void flip_variable(IndexType var_id, Laurant & new_laurant)
+    {
+        PolyTerm * curr_ptr = num.term_tree;
+        new_laurant.denom_orders.assign(denom_orders.begin(), denom_orders.end());
+        bool larger_denom = (denom_orders[var_id] > num_max_orders[var_id]);
+        if(larger_denom)
+        {
+            new_laurant.denom_orders[var_id] = 0;
+        }
+        else
+        {
+            new_laurant.denom_orders[var_id] = num_max_orders[var_id] - denom_orders[var_id];
+        }
+        while(curr_ptr != NULL)
+        {
+            // new order
+            Monomial new_term(*curr_ptr);
+            if(larger_denom)
+            {
+                new_term.var_order(var_id) = denom_orders[var_id] - curr_ptr->var_order(var_id);
+            }
+            else
+            {
+                new_term.var_order(var_id) = num_max_orders[var_id] - curr_ptr->var_order(var_id);
+            }
+            
+            new_laurant.num.add_term(new_term);
+            curr_ptr = curr_ptr -> next;
+        }
+        new_laurant.num.get_max_order(new_laurant.num_max_orders);
+        new_laurant.reduction();
     }
 };
 

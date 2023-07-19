@@ -120,5 +120,6 @@ PYBIND11_MODULE(_poly_tools_rr, m)
         .def("reduction", &Laurant::reduction)
         .def("set_Laurant", &Laurant::set_Laurant)
         .def("set_Laurant_by_terms", &Laurant::set_Laurant_by_terms)
+        .def("flip_variable", &Laurant::flip_variable)
         .def("eval", &Laurant::eval);
 }
