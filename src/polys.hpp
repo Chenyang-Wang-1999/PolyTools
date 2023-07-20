@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2022-12-18
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 
 #ifndef POLYS_H
@@ -1322,6 +1322,12 @@ public:
     Laurant(IndexType dim):dim(dim), num(dim){
         num_max_orders.assign(dim, 0);
         denom_orders.assign(dim, 0);
+    }
+
+    Laurant(Laurant& laurant_another):dim(laurant_another.dim), num(laurant_another.dim), 
+        num_max_orders(laurant_another.num_max_orders), denom_orders(laurant_another.denom_orders)
+    {
+        laurant_another.num.copy_to(num);
     }
 
     void reinit()
