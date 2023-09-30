@@ -39,9 +39,12 @@ test_series_sq.exe:  ../obj/*cc.o ../obj/poly_utils.o
 test_series_to_linked_list.exe:  ../obj/*cc.o ../obj/poly_utils.o
 	c++ -Wall -DDEBUG test_series_to_linked_list.cpp ../obj/*cc.o ../obj/poly_utils.o -o test_series_to_linked_list.exe 
 
-test_memory.exe: ../obj/polys_cc.o ../obj/poly_utils.o
-	c++ -Wall -DDEBUG test_memory.cpp ../obj/polys_cc.o ../obj/poly_utils.o -o test_memory.exe -g
+test_memory.exe: 
+	c++ -Wall -DDEBUG test_memory.cpp  -o test_memory.exe -g
 
 test_poly_linked_init.exe: ../obj/*_cc.o ../obj/poly_utils.o
 	c++ -Wall -DDEBUG test_poly_linked_init.cpp ../obj/*_cc.o ../obj/poly_utils.o -o test_poly_linked_init.exe -g
+
+test_partial_eval.exe: 
+	g++ -Wall -DDEBUG test_partial_eval.cpp -o test_partial_eval.exe -g
 

@@ -9,29 +9,29 @@
 #include <ctime>
 #include <complex>
 
-Monomial random_term(IndexType dim, IndexType order)
+PolyTools::Monomial random_term(PolyTools::IndexType dim, PolyTools::IndexType order)
 {
-    IndexVec order_var(dim);
-    IndexType remaining_order = order;
-    for(IndexType var_id = 0; var_id<dim-1; var_id ++)
+    PolyTools::IndexVec order_var(dim);
+    PolyTools::IndexType remaining_order = order;
+    for(PolyTools::IndexType var_id = 0; var_id<dim-1; var_id ++)
     {
-        IndexType curr_order = rand() % (remaining_order + 1);
+        PolyTools::IndexType curr_order = rand() % (remaining_order + 1);
         order_var[var_id] = curr_order;
         remaining_order -= curr_order;
     }
     order_var[dim-1] = remaining_order;
-    Scalar coeff(rand()/((double) RAND_MAX), rand()/((double) RAND_MAX));
+    PolyTools::Scalar coeff(rand()/((double) RAND_MAX), rand()/((double) RAND_MAX));
 
-    return Monomial(coeff, order_var);
+    return PolyTools::Monomial(coeff, order_var);
     
 }
 
-void random_homogen(IndexType N_terms, IndexType order, IndexType dim, Homogen & homogen_fun)
+void random_homogen(PolyTools::IndexType N_terms, PolyTools::IndexType order, PolyTools::IndexType dim, PolyTools::Homogen & homogen_fun)
 {
-    IndexVec order_var(dim);
+    PolyTools::IndexVec order_var(dim);
     homogen_fun.reinit(dim, order);
     // set random
-    for(IndexType term_id=0; term_id<N_terms; term_id ++)
+    for(PolyTools::IndexType term_id=0; term_id<N_terms; term_id ++)
     {
         // IndexType remaining_order = order;
         // for(IndexType var_id = 0; var_id<dim-1; var_id ++)
