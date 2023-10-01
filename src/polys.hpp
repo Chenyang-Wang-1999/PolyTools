@@ -208,7 +208,8 @@ public:
 
 
     /* Utilities */
-    IndexType& var_order(IndexType var_id){return _order_var[var_id];}
+    IndexType & var_order(IndexType var_id){return _order_var[var_id];}
+
     // copy
     Monomial copy(){
         IndexVec new_order_var(dim);
@@ -327,6 +328,7 @@ public:
     IndexType n_terms, dim;
     bool increasing_order = true;
     PolyTerm * term_tree = NULL;
+    PolyTerm * leading_term = NULL; // leading term
     PolyLinkedList(IndexType dim, bool increasing_order)
         :dim(dim), increasing_order(increasing_order){
         n_terms = 0;
@@ -358,6 +360,11 @@ public:
     }
 
     /* Utilities */
+    void reinit(IndexType dim)
+    {
+        reinit(dim, true);
+    }
+
     void reinit(IndexType dim, bool increasing_order)
     {
         this->dim = dim;
@@ -365,6 +372,7 @@ public:
         this->n_terms = 0;
         destroy_tree<PolyTerm>(this->term_tree);
         this->term_tree = NULL;
+        leading_term_flag = false;
     }
 
     // remove terms less then EPS
@@ -482,7 +490,7 @@ public:
         {
             PolyTerm* new_term = new PolyTerm(curr_term_ptr->copy());
             funcall(new_term);
-            if(new_homog.n_terms == 0)
+            if(new_homog.term_tree == NULL)
             {
                 new_homog.insert_at_head(new_term);
                 new_term_ptr = new_homog.term_tree;
@@ -584,6 +592,7 @@ public:
                 new_poly->add_term(Monomial(term->coeff, new_orders));
             }, &res
         );
+        res.leading_term_flag = false;
     }
 
     /* add term to the current homogenerous polynomial, 
@@ -672,6 +681,7 @@ public:
         assert(dim == new_term->dim);
         n_terms ++;
         insert_after_ptr<PolyTerm>(curr_term, new_term);
+        leading_term_flag = false;
     }
     void insert_at_head(PolyTerm * new_term)
     {
@@ -679,6 +689,7 @@ public:
         n_terms ++;
         new_term->next = term_tree;
         term_tree = new_term;
+        leading_term_flag = false;
     }
 
     PolyTerm* pop_first_term()
@@ -688,14 +699,33 @@ public:
         term_tree = term_tree->next;
         n_terms--;
         curr_term -> next = NULL;
+        leading_term_flag = false;
         return curr_term;
     }
+
     /* pop the next term of current term ptr */
     PolyTerm* pop_next_term(PolyTerm * curr_term_ptr)
     {
         PolyTerm* next_ptr = pop_next_node<PolyTerm>(curr_term_ptr);
         n_terms--;
+        leading_term_flag = false;
         return next_ptr;
+    }
+
+    // update leading term
+    bool leading_term_flag = false;
+    void update_leading_term()
+    {
+        leading_term = term_tree;
+        if(leading_term == NULL)
+        {
+            return;
+        }
+        while(leading_term->next != NULL)
+        {
+            leading_term = leading_term->next;
+        }
+        leading_term_flag = true;
     }
 
 
@@ -777,6 +807,8 @@ public:
     {
         assert(dim == another.dim);
         assert(increasing_order == another.increasing_order);
+        leading_term_flag = false;
+        another.leading_term_flag = false;
 
         PolyTerm * LHS_ptr=term_tree;
         bool is_first_term = true;// whether LHS_ptr points to the first term
@@ -881,6 +913,8 @@ public:
         assert(increasing_order == another.increasing_order);
         // Compare the pointer at the list head, and append one by one to the new Homogen
         new_homog.reinit(dim, increasing_order);
+        leading_term_flag = false;
+        another.leading_term_flag = false;
 
         PolyTerm * new_term_ptr=NULL, *insert_pos_ptr=NULL;
         PolyTerm * another_term_ptr = NULL;
@@ -1199,6 +1233,24 @@ public:
                 curr_insert_ptr = curr_insert_ptr->next;
             }
         }
+    }
+
+    // multiply with a monomial
+    void monomial_mul_self(Monomial & new_monomial)
+    {
+        PolyTerm * curr_ptr = term_tree;
+        while(curr_ptr != NULL)
+        {
+            curr_ptr -> mul_self(new_monomial);
+            curr_ptr = curr_ptr -> next;
+        }
+    }
+
+    void monomial_mul(Monomial & new_monomial, PolyLinkedList & new_poly)
+    {
+        new_poly.reinit(dim);
+        copy_and_call<Monomial>([](PolyTerm * curr_ptr, Monomial * new_monomial_ptr){curr_ptr->mul_self(*new_monomial_ptr);}, 
+                &new_monomial, new_poly);
     }
 
 private:

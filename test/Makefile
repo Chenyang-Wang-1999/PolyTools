@@ -48,3 +48,8 @@ test_poly_linked_init.exe: ../obj/*_cc.o ../obj/poly_utils.o
 test_partial_eval.exe: 
 	g++ -Wall -DDEBUG test_partial_eval.cpp -o test_partial_eval.exe -g
 
+test_leading_term.exe:
+	g++ -Wall -O3 test_leading_term.cpp -o test_leading_term.exe -g
+
+test_poly_ring.exe:
+	g++ -Wall -O3 test_poly_ring.cpp -o test_poly_ring.exe -g

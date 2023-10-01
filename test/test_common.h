@@ -46,3 +46,25 @@ void random_homogen(PolyTools::IndexType N_terms, PolyTools::IndexType order, Po
     }
  
 }
+
+void random_poly(PolyTools::IndexType N_terms, PolyTools::IndexType order, PolyTools::IndexType dim, PolyTools::PolyLinkedList & poly_fun)
+{
+    PolyTools::IndexVec order_var(dim);
+    poly_fun.reinit(dim);
+    // set random
+    for(PolyTools::IndexType term_id=0; term_id<N_terms; term_id ++)
+    {
+        // IndexType remaining_order = order;
+        // for(IndexType var_id = 0; var_id<dim-1; var_id ++)
+        // {
+        //     IndexType curr_order = rand() % (remaining_order + 1);
+        //     order_var[var_id] = curr_order;
+        //     remaining_order -= curr_order;
+        // }
+        // order_var[dim-1] = remaining_order;
+        // Scalar coeff(rand()/((double) RAND_MAX), rand()/((double) RAND_MAX));
+        PolyTools::IndexType curr_order = rand()%(order + 1);
+        poly_fun.add_term(random_term(dim, curr_order));
+    }
+ 
+}
