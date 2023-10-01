@@ -26,6 +26,12 @@ public:
         new_poly.copy_to(*new_poly_ptr);
         data.push_front(new_poly_ptr);
     }
+    void get_poly(IndexType j, PolyLinkedList & new_poly)
+    {
+        new_poly.reinit(data[j]->dim);
+        data[j] -> copy_to(new_poly);
+    }
+    size_t size(){return data.size();};
     ~PolyDeque()
     {
         for(auto poly_ptr:data)
