@@ -1362,7 +1362,7 @@ private:
 
 };
 
-class Laurant
+class Laurent
 {
 public:
     IndexType dim;
@@ -1371,15 +1371,15 @@ public:
     IndexVec num_max_orders;
     IndexVec denom_orders;
 
-    Laurant(IndexType dim):dim(dim), num(dim){
+    Laurent(IndexType dim):dim(dim), num(dim){
         num_max_orders.assign(dim, 0);
         denom_orders.assign(dim, 0);
     }
 
-    Laurant(Laurant& laurant_another):dim(laurant_another.dim), num(laurant_another.dim), 
-        num_max_orders(laurant_another.num_max_orders), denom_orders(laurant_another.denom_orders)
+    Laurent(Laurent& Laurent_another):dim(Laurent_another.dim), num(Laurent_another.dim), 
+        num_max_orders(Laurent_another.num_max_orders), denom_orders(Laurent_another.denom_orders)
     {
-        laurant_another.num.copy_to(num);
+        Laurent_another.num.copy_to(num);
     }
 
     void reinit()
@@ -1391,7 +1391,7 @@ public:
     
     void reduction()
     {
-        // conduct reduction of the Laurant polynomial
+        // conduct reduction of the Laurent polynomial
         IndexVec num_min_orders;
         
         num.get_min_order(num_max_orders, num_min_orders);
@@ -1421,7 +1421,7 @@ public:
         );
     }
 
-    void set_Laurant(PolyLinkedList & num, Monomial & denom)
+    void set_Laurent(PolyLinkedList & num, Monomial & denom)
     {
         assert(num.dim == dim);
         assert(denom.dim == dim);
@@ -1435,7 +1435,7 @@ public:
         reduction();
     }
 
-    void set_Laurant_by_terms(ScalarVec coeffs, std::vector<int> orders)
+    void set_Laurent_by_terms(ScalarVec coeffs, std::vector<int> orders)
     {
         // assertion
         assert(coeffs.size() * dim == orders.size());
@@ -1485,18 +1485,18 @@ public:
     /* 
         f(x1, x2, ..., xi, ..., xn) -> g(x) = f(x1, x2, ..., 1/xi, ..., xn) 
     */
-    void flip_variable(IndexType var_id, Laurant & new_laurant)
+    void flip_variable(IndexType var_id, Laurent & new_Laurent)
     {
         PolyTerm * curr_ptr = num.term_tree;
-        new_laurant.denom_orders.assign(denom_orders.begin(), denom_orders.end());
+        new_Laurent.denom_orders.assign(denom_orders.begin(), denom_orders.end());
         bool larger_denom = (denom_orders[var_id] > num_max_orders[var_id]);
         if(larger_denom)
         {
-            new_laurant.denom_orders[var_id] = 0;
+            new_Laurent.denom_orders[var_id] = 0;
         }
         else
         {
-            new_laurant.denom_orders[var_id] = num_max_orders[var_id] - denom_orders[var_id];
+            new_Laurent.denom_orders[var_id] = num_max_orders[var_id] - denom_orders[var_id];
         }
         while(curr_ptr != NULL)
         {
@@ -1511,11 +1511,11 @@ public:
                 new_term.var_order(var_id) = num_max_orders[var_id] - curr_ptr->var_order(var_id);
             }
             
-            new_laurant.num.add_term(new_term);
+            new_Laurent.num.add_term(new_term);
             curr_ptr = curr_ptr -> next;
         }
-        new_laurant.num.get_max_order(new_laurant.num_max_orders);
-        new_laurant.reduction();
+        new_Laurent.num.get_max_order(new_Laurent.num_max_orders);
+        new_Laurent.reduction();
     }
 };
 

@@ -43,7 +43,7 @@ PYBIND11_MODULE(_poly_tools_rr, m)
     py::bind_vector<std::vector<std::string>>(m, "CStrVec");
     py::bind_vector<IndexVec>(m, "CIndexVec");
     py::bind_vector<ScalarVec>(m, "CScalarVec");
-    py::bind_vector<std::vector<int>>(m, "CLaurantIndexVec");
+    py::bind_vector<std::vector<int>>(m, "CLaurentIndexVec");
     py::class_<SeriesVec>(m,"_CSeriesVec")
         .def(py::init<IndexType, IndexType, IndexType>() )
         .def_readonly("var_dim", &SeriesVec::var_dim)
@@ -110,16 +110,16 @@ PYBIND11_MODULE(_poly_tools_rr, m)
         .def_readonly("dim", &Monomial::dim)
         .def_readwrite("coeff", &Monomial::coeff);
     
-    py::class_<Laurant>(m, "_CLaurant")
+    py::class_<Laurent>(m, "_CLaurent")
         .def(py::init<IndexType>())
-        .def_readonly("dim", &Laurant::dim)
-        .def_readonly("num_max_orders", &Laurant::num_max_orders)
-        .def_readonly("denom_orders", &Laurant::denom_orders)
-        .def_readwrite("num", &Laurant::num)
-        .def("reinit", &Laurant::reinit)
-        .def("reduction", &Laurant::reduction)
-        .def("set_Laurant", &Laurant::set_Laurant)
-        .def("set_Laurant_by_terms", &Laurant::set_Laurant_by_terms)
-        .def("flip_variable", &Laurant::flip_variable)
-        .def("eval", &Laurant::eval);
+        .def_readonly("dim", &Laurent::dim)
+        .def_readonly("num_max_orders", &Laurent::num_max_orders)
+        .def_readonly("denom_orders", &Laurent::denom_orders)
+        .def_readwrite("num", &Laurent::num)
+        .def("reinit", &Laurent::reinit)
+        .def("reduction", &Laurent::reduction)
+        .def("set_Laurent", &Laurent::set_Laurent)
+        .def("set_Laurent_by_terms", &Laurent::set_Laurent_by_terms)
+        .def("flip_variable", &Laurent::flip_variable)
+        .def("eval", &Laurent::eval);
 }
