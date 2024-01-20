@@ -1517,6 +1517,39 @@ public:
         new_Laurent.num.get_max_order(new_Laurent.num_max_orders);
         new_Laurent.reduction();
     }
+
+    void derivative(IndexType var_id, Laurent & new_laurent)
+    {
+        // new_laurent = g' * xk / (h * xk) - (mk * g)/(h * xk)
+        IndexVec new_denom_degrees = this->denom_orders;
+        new_denom_degrees[var_id] ++;
+
+        // mk * g term
+        PolyLinkedList new_g(this->dim), new_g_prime(this->dim);
+        this->num.scalar_mul(this->denom_orders[var_id], new_g);
+
+        // g' * xk term
+        this->num.derivative(var_id, new_g_prime);
+        IndexVec xk_degrees(this->dim);
+        xk_degrees[var_id] = 1;
+        Monomial xk(1.0, xk_degrees);
+        new_g_prime.monomial_mul_self(xk);
+
+        // calculate numerator
+        new_g_prime.destructive_subs_self(new_g);
+        Monomial new_denom(1.0, new_denom_degrees);
+        new_laurent.set_Laurent(new_g_prime, new_denom);
+    }
+
+    void partial_eval(VarScalarVec & var_vals, IndexVec & eval_id_list, IndexVec & new_dof_map, Laurent & new_Laurent)
+    {
+        // partial evaluation
+        PolyLinkedList new_num(this->dim);
+        this->num.partial_eval(var_vals, eval_id_list, new_dof_map, &new_num);
+        Monomial new_denom = Monomial(1.0, this->denom_orders).partial_eval(var_vals, eval_id_list, new_dof_map);
+
+        new_Laurent.set_Laurent(new_num, new_denom);
+    }
 };
 
 /* Homogeneous polymial*/
