@@ -264,6 +264,16 @@ class CLaurent(c_poly_tools._CLaurent):
         new_Laurent = CLaurent(self.dim)
         super().flip_variable(var_id, new_Laurent)
         return new_Laurent
+    
+    def derivative(self, var_id:int):
+        new_Laurent = CLaurent(self.dim)
+        super().derivative(var_id, new_Laurent)
+        return new_Laurent
+    
+    def partial_eval(self, var_vals:CVarScalarVec, eval_id_list:CIndexVec, new_dof_map:CIndexVec):
+        new_Laurent = CLaurent(self.dim - len(var_vals))
+        super().partial_eval(var_vals, eval_id_list, new_dof_map, new_Laurent)
+        return new_Laurent
 
 def poly_load_from_file(fname):
     data = spio.loadmat(fname)

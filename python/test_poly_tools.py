@@ -140,9 +140,62 @@ def test_Laurent_flip():
     print(new_Laurent.eval(val))
     print()
 
+def test_Laurent_partial_eval():
+    # 1. generate a random Laurent polynomial
+    dim = 3
+    N_terms = 100
+    max_deg = 5
+    min_deg = -4
+    all_degs = np.random.randint(min_deg, max_deg, size=N_terms * dim)
+    all_coeffs = np.random.rand(N_terms) + 1j * np.random.rand(N_terms)
+
+    f = pt.CLaurent(dim)
+    f.set_Laurent_by_terms(pt.CScalarVec(all_coeffs), pt.CLaurentIndexVec(all_degs))
+
+    # 2. generate x0
+    x0 = np.random.rand(dim) + 1j * np.random.rand(dim)
+
+    # 3. calculate partial evaluation
+    f1 = f.partial_eval(pt.CVarScalarVec([x0[1]]), pt.CIndexVec([1]), pt.CIndexVec([0,2]))
+
+    # eval
+    print(f.eval(pt.CVarScalarVec(x0)))
+    print(f1.eval(pt.CVarScalarVec(x0[[0,2]])))
+
+def test_Laurent_derivative():
+    # 1. generate a random Laurent polynomial
+    dim = 3
+    N_terms = 100
+    max_deg = 5
+    min_deg = -4
+    all_degs = np.random.randint(min_deg, max_deg, size=N_terms * dim)
+    all_coeffs = np.random.rand(N_terms) + 1j * np.random.rand(N_terms)
+
+    f = pt.CLaurent(dim)
+    f.set_Laurent_by_terms(pt.CScalarVec(all_coeffs), pt.CLaurentIndexVec(all_degs))
+
+    diff_var = 1
+    df = f.derivative(diff_var)
+
+    # 2. generate x
+    x0 = np.random.rand(dim) + 1j * np.random.rand(dim)
+    dx = np.random.rand() * 1e-5
+    x1 = x0.copy()
+    x1[diff_var] += dx
+
+    # 3. evaluate
+    fx = f.eval(pt.CVarScalarVec(x0))
+    fx2 = f.eval(pt.CVarScalarVec(x1))
+    dfx = df.eval(pt.CVarScalarVec(x0))
+    print(fx2 - fx)
+    print(dfx*dx)
+    print(abs(fx2 - fx - dfx*dx)/abs(dfx*dx))
+
 
 if __name__ == '__main__':
     # main_test_partial_eval()
     # test_Laurent_basic()
     # test_Laurent_reduction()
-    test_Laurent_flip()
+    # test_Laurent_flip()
+    # test_Laurent_partial_eval()
+    test_Laurent_derivative()

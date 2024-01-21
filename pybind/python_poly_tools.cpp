@@ -63,7 +63,7 @@ PYBIND11_MODULE(_poly_tools_rr, m)
     #endif
     py::class_<PolyLinkedList>(m, "_CPolyLinkedList")
         .def(py::init<IndexType>())
-        .def("reinit", &PolyLinkedList::reinit)
+        .def("reinit", py::overload_cast<IndexType> (&PolyLinkedList::reinit))
         .def("remove_zeros", &PolyLinkedList::remove_zeros)
         .def("copy_to", &PolyLinkedList::copy_to)
         .def("to_str", &PolyLinkedList::to_str)
@@ -121,5 +121,7 @@ PYBIND11_MODULE(_poly_tools_rr, m)
         .def("set_Laurent", &Laurent::set_Laurent)
         .def("set_Laurent_by_terms", &Laurent::set_Laurent_by_terms)
         .def("flip_variable", &Laurent::flip_variable)
+        .def("derivative", &Laurent::derivative)
+        .def("partial_eval", &Laurent::partial_eval)
         .def("eval", &Laurent::eval);
 }
