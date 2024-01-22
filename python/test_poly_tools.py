@@ -191,6 +191,31 @@ def test_Laurent_derivative():
     print(dfx*dx)
     print(abs(fx2 - fx - dfx*dx)/abs(dfx*dx))
 
+def test_Laurent_to_str():
+    coeffs = pt.CScalarVec([
+        1, -1.15, -0.3, -0.3, -0.3, -0.3, 0.02, 0.02, 0.02, 0.02, 
+        -0.5, -0.4, 0.04, 0.04
+    ])
+    degs = pt.CLaurentIndexVec([
+        2, 0, 0, 
+        0, 0, 0,
+        1, 1, 0,
+        1, -1, 0,
+        1, 0, -1,
+        1, 0, 1,
+        0, 2, 0,
+        0, -2, 0,
+        0, 0, 2,
+        0, 0, -2,
+        0, 1, 1,
+        0, -1, -1,
+        0, 1, -1,
+        0, -1, 1 
+    ])
+
+    f = pt.CLaurent(3)
+    f.set_Laurent_by_terms(coeffs, degs)
+    print(f.to_str(pt.CStrVec(['x', 'y', 'z'])))
 
 if __name__ == '__main__':
     # main_test_partial_eval()
@@ -198,4 +223,5 @@ if __name__ == '__main__':
     # test_Laurent_reduction()
     # test_Laurent_flip()
     # test_Laurent_partial_eval()
-    test_Laurent_derivative()
+    # test_Laurent_derivative()
+    test_Laurent_to_str()

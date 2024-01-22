@@ -93,8 +93,41 @@ int test_Laurent_partial_eval()
     return 0;
 }
 
+int test_Laurent_to_str()
+{
+    /* poly to test 
+        f(x,y,z)=x^{2}-1.15-0.3xy-0.3xy^{-1}-0.3xz^{-1}-0.3xz+0.02y^{2}+0.02y^{-2}+0.02z^{2}+0.02z^{-2}-0.5yz-0.4y^{-1}z^{-1}+0.04yz^{-1}+0.04y^{-1}zf = x^2 - 0.3 xy - 0.3x/y - 0.3x/z - 0.3 xz + 0.02 y^2
+    */
+    PolyTools::ScalarVec coeffs = {
+        1, -1.15, -0.3, -0.3, -0.3, -0.3, 0.02, 0.02, 0.02, 0.02, 
+        -0.5, -0.4, 0.04, 0.04
+    };
+    std::vector<int> degs = {
+        2, 0, 0, 
+        0, 0, 0,
+        1, 1, 0,
+        1, -1, 0,
+        1, 0, -1,
+        1, 0, 1,
+        0, 2, 0,
+        0, -2, 0,
+        0, 0, 2,
+        0, 0, -2,
+        0, 1, 1,
+        0, -1, -1,
+        0, 1, -1,
+        0, -1, 1 
+    };
+
+    Laurent poly(3);
+    poly.set_Laurent_by_terms(coeffs, degs);
+    std::cout << poly.to_str({"x", "y", "z"}) << '\n';
+    return 0;
+}
+
 int main()
 {
     // return test_Laurent_derivative();
-    return test_Laurent_partial_eval();
+    // return test_Laurent_partial_eval();
+    return test_Laurent_to_str();
 }

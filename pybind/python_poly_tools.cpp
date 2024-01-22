@@ -123,5 +123,6 @@ PYBIND11_MODULE(_poly_tools_rr, m)
         .def("flip_variable", &Laurent::flip_variable)
         .def("derivative", &Laurent::derivative)
         .def("partial_eval", &Laurent::partial_eval)
+        .def("to_str", &Laurent::to_str)
         .def("eval", &Laurent::eval);
 }

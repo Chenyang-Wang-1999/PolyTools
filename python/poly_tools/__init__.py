@@ -275,6 +275,9 @@ class CLaurent(c_poly_tools._CLaurent):
         super().partial_eval(var_vals, eval_id_list, new_dof_map, new_Laurent)
         return new_Laurent
 
+    def to_str(self, varname_list:CStrVec):
+        return super().to_str(varname_list)
+
 def poly_load_from_file(fname):
     data = spio.loadmat(fname)
     coeffs = data['coeffs'].flatten()

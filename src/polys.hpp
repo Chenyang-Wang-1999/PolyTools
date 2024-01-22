@@ -1550,6 +1550,57 @@ public:
 
         new_Laurent.set_Laurent(new_num, new_denom);
     }
+
+    std::string to_str(const std::vector<std::string> & var_name_list)
+    {
+        std::ostringstream poly_string;
+        poly_string << std::setprecision(18);
+
+        PolyTerm * curr_ptr = num.term_tree;
+        while(curr_ptr != NULL)
+        {
+            // 1. coefficient
+            #if SCALAR_MODE == 0
+                // complex coefficients
+                poly_string << '+' << '(' << curr_ptr->coeff.real();
+                if(curr_ptr->coeff.imag() >=0)
+                {
+                    poly_string << '+' << abs(curr_ptr->coeff.imag()) << "*i)";
+                }
+                else
+                {
+                    poly_string << '-' << abs(curr_ptr->coeff.imag()) << "*i)";
+                }
+            #else
+                // real coefficients
+                poly_string << '+' << '(' << curr_ptr->coeff << ')';
+            #endif
+
+            // 2. variables
+            for(IndexType curr_var = 0; curr_var < dim; curr_var++)
+            {
+                int curr_deg = curr_ptr -> var_order(curr_var);
+                curr_deg -= denom_orders[curr_var];
+                if(curr_deg > 1)
+                {
+                    poly_string << "*(" << var_name_list[curr_var] <<"**" << curr_deg <<')';
+                }
+                else if(curr_deg == 1)
+                {
+                    poly_string << "*" << var_name_list[curr_var];
+                }
+                else if(curr_deg < 0)
+                {
+                    poly_string << "*(" << var_name_list[curr_var] << "**(" << curr_deg << ')' <<')';
+                }
+            }
+            curr_ptr = curr_ptr->next;
+        }
+        poly_string << ';';
+        return poly_string.str();
+    }
+
+
 };
 
 /* Homogeneous polymial*/
