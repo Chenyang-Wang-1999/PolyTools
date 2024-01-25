@@ -1616,6 +1616,30 @@ public:
         return poly_string.str();
     }
 
+    void copy_to(Laurent & new_Laurent)
+    {
+        new_Laurent.reinit();
+        new_Laurent.dim = dim;
+        this->num.copy_to(new_Laurent.num);
+        new_Laurent.denom_orders = denom_orders;
+        new_Laurent.num_max_orders = num_max_orders;
+    }
+
+    void scale_var(ScalarVec k, Laurent & new_Laurent)
+    {
+        this->copy_to(new_Laurent);
+        new_Laurent.num.scale_var_self(k);
+        Scalar denom_scale = 1.0;
+        for (IndexType var_id = 0; var_id < dim; var_id ++)
+        {
+            if(denom_orders[var_id] > 0)
+            {
+                denom_scale *= pow(k[var_id], denom_orders[var_id]);
+            }
+        }
+
+        new_Laurent.num.scalar_mul_self(1.0/denom_scale);
+    }
 
 };
 

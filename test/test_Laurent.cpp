@@ -125,9 +125,47 @@ int test_Laurent_to_str()
     return 0;
 }
 
+int test_Laurent_scaling()
+{
+    srand(time(NULL));
+    IndexType dim = 3, N_terms = 100, max_deg = 5;
+    ScalarVec coeffs(N_terms);
+    IndexVec degrees(dim * N_terms);
+
+    // generate random Laurent
+    PolyLinkedList f_num(dim);
+    random_poly(N_terms, max_deg, dim, f_num);
+    Monomial f_denom = random_term(dim, max_deg);
+    Laurent f(dim);
+    f.set_Laurent(f_num, f_denom);
+
+    // generate x, k
+    VarScalarVec x(dim), k(dim), xk(dim);
+    for(auto x_it = x.begin(); x_it != x.end(); x_it++)
+    {
+        (*x_it) = Scalar(((double)rand())/RAND_MAX,((double)rand())/RAND_MAX) + 0.001;
+    }
+    for(auto k_it = k.begin(); k_it != k.end(); k_it++)
+    {
+        (*k_it) = Scalar(((double)rand())/RAND_MAX,((double)rand())/RAND_MAX) + 0.001;
+    }
+    for(IndexType j = 0; j < dim ; j++)
+    {
+        xk[j] = x[j] * k[j];
+    }
+
+    // evaluation
+    Laurent f_scaled(dim);
+    f.scale_var(k, f_scaled);
+    std::cout << "f(kx):" << f.eval(xk) << '\n';
+    std::cout << "f_scaled(x):" << f_scaled.eval(x) << '\n';
+    return 0;
+}
+
 int main()
 {
     // return test_Laurent_derivative();
     // return test_Laurent_partial_eval();
-    return test_Laurent_to_str();
+    // return test_Laurent_to_str();
+    return test_Laurent_scaling();
 }
