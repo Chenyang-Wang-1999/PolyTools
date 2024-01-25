@@ -1,7 +1,7 @@
 '''
 author:        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
 date:          2023-07-10
-Copyright © Department of Physics, Tsinghua University.  All rights reserved
+Copyright © Department of Physics, Tsinghua University. All rights reserved
 '''
 
 import numpy as np
@@ -217,6 +217,32 @@ def test_Laurent_to_str():
     f.set_Laurent_by_terms(coeffs, degs)
     print(f.to_str(pt.CStrVec(['x', 'y', 'z'])))
 
+def test_Laurent_scaling():
+    # 1. generate a random Laurent polynomial
+    dim = 3
+    N_terms = 100
+    max_deg = 5
+    min_deg = -4
+    all_degs = np.random.randint(min_deg, max_deg, size=N_terms * dim)
+    all_coeffs = np.random.rand(N_terms) + 1j * np.random.rand(N_terms)
+
+    f = pt.CLaurent(dim)
+    f.set_Laurent_by_terms(pt.CScalarVec(all_coeffs), pt.CLaurentIndexVec(all_degs))
+
+    # 2. generate x0, k, kx0
+    x0 = np.random.rand(dim) + 1j * np.random.rand(dim)
+    k = np.random.rand(dim) + 1j * np.random.rand(dim)
+    kx0 = k * x0
+
+    # 3. evaluate
+    f_scaled = f.scale_var(pt.CScalarVec(k))
+    fkx0 = f.eval(pt.CScalarVec(kx0))
+    f_scaled_x0 = f_scaled.eval(pt.CScalarVec(x0))
+    print("f(kx):", fkx0)
+    print("f_scaled(x)", f_scaled_x0)
+    print("Error:", f_scaled_x0 - fkx0)
+
+
 if __name__ == '__main__':
     # main_test_partial_eval()
     # test_Laurent_basic()
@@ -224,4 +250,5 @@ if __name__ == '__main__':
     # test_Laurent_flip()
     # test_Laurent_partial_eval()
     # test_Laurent_derivative()
-    test_Laurent_to_str()
+    # test_Laurent_to_str()
+    test_Laurent_scaling()

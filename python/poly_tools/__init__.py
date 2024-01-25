@@ -1,7 +1,7 @@
 '''
 author:        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
 date:          2022-12-22
-Copyright © Department of Physics, Tsinghua University.  All rights reserved
+Copyright © Department of Physics, Tsinghua University. All rights reserved
 '''
 
 MODE = 'cc'
@@ -277,6 +277,11 @@ class CLaurent(c_poly_tools._CLaurent):
 
     def to_str(self, varname_list:CStrVec):
         return super().to_str(varname_list)
+
+    def scale_var(self, k:CScalarVec):
+        new_laurent = CLaurent(self.dim)
+        super().scale_var(k,new_laurent)
+        return new_laurent
 
 def poly_load_from_file(fname):
     data = spio.loadmat(fname)

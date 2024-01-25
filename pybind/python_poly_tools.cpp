@@ -1,7 +1,7 @@
 /*
  * @author        wangchenyang <cy-wang21@mails.tsinghua.edu.cn>
  * @date          2023-03-02
- * Copyright © Department of Physics, Tsinghua University.  All rights reserved
+ * Copyright © Department of Physics, Tsinghua University. All rights reserved
  */
 #include "../src/polys.hpp"
 #include "../src/poly_utils.hpp"
@@ -124,5 +124,6 @@ PYBIND11_MODULE(_poly_tools_rr, m)
         .def("derivative", &Laurent::derivative)
         .def("partial_eval", &Laurent::partial_eval)
         .def("to_str", &Laurent::to_str)
+        .def("scale_var", &Laurent::scale_var)
         .def("eval", &Laurent::eval);
 }
