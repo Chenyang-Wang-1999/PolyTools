@@ -1482,6 +1482,22 @@ public:
         return val;
     }
 
+    VarScalar eval_diff(IndexVec diff_order, VarScalarVec x_arr)
+    {
+        STDERR << "Warning: unsafe!\n";
+        // num term
+        VarScalar val_diff = num.eval_diff(diff_order, x_arr), val = num.eval(x_arr);
+
+        // denom
+        Monomial denom_mono(1.0, denom_orders);
+        PolyLinkedList denom_poly(this->dim);
+        denom_poly.add_term(denom_mono);
+        VarScalar denom_val = denom_poly.eval(x_arr), denom_diff = denom_poly.eval_diff(diff_order, x_arr);
+
+        return val_diff/denom_val - val * denom_diff/(pow(denom_val, 2));
+
+    }
+
     /* 
         f(x1, x2, ..., xi, ..., xn) -> g(x) = f(x1, x2, ..., 1/xi, ..., xn) 
     */
